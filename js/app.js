@@ -88,6 +88,9 @@ const formRegistro =
 const nombrePiloto =
     document.getElementById("nombre-piloto");
 
+const telefonoPiloto =
+    document.getElementById("telefono-piloto");
+
 const tipoVehiculo =
     document.getElementById("tipo-vehiculo");
 
@@ -1571,6 +1574,9 @@ if (formRegistro) {
 
             const nombre =
                 nombrePiloto.value.trim();
+            
+            const telefono =
+                telefonoPiloto.value.trim();
 
             const tipo =
                 tipoVehiculo.value.trim();
@@ -1579,7 +1585,18 @@ if (formRegistro) {
 
                 nombrePiloto.focus();
 
-                return;
+            
+if (!/^\d{8}$/.test(telefono)) {
+
+    alert(
+        "Ingresa un número de teléfono válido de 8 dígitos."
+    );
+
+    telefonoPiloto.focus();
+
+    return;
+}
+
             }
 
             if (tipo === "") {
@@ -1607,6 +1624,8 @@ if (formRegistro) {
                         "?accion=registrar" +
                         "&nombre=" +
                         encodeURIComponent(nombre) +
+                        "&telefono=" +
+                        encodeURIComponent(telefono) +
                         "&tipo=" +
                         encodeURIComponent(tipo)
                     );

@@ -543,6 +543,40 @@
                 </div>
 
 
+<!-- TELÉFONO DEL PILOTO -->
+
+<div class="campo registro-campo">
+
+    <label for="telefono-piloto">
+        Número de teléfono
+    </label>
+
+    <div class="registro-input-wrapper">
+
+        <span class="registro-input-icono">
+            <i data-lucide="phone"></i>
+        </span>
+
+        <input
+            type="tel"
+            id="telefono-piloto"
+            name="telefono"
+            placeholder="Ej: 41234567"
+            autocomplete="tel-national"
+            inputmode="numeric"
+            pattern="[0-9]{8}"
+            minlength="8"
+            maxlength="8"
+            title="Ingresa un número de 8 dígitos"
+            required
+        >
+
+    </div>
+
+</div>
+
+
+
 
                 <div class="campo registro-campo">
 
@@ -2180,7 +2214,7 @@
 
     <!-- LÓGICA JDJ -->
 
-    <script src="js/app.js?v=31"></script>
+    <script src="js/app.js?v=33"></script>
 
 </body>
 
