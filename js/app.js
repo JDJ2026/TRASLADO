@@ -2228,6 +2228,7 @@ function detenerVigilanciaIngreso() {
 }
 
 
+
 async function consultarEstadoParticipante() {
 
     if (
@@ -2241,66 +2242,143 @@ async function consultarEstadoParticipante() {
 
     try {
 
-        const respuesta =
-            await fetch(
-                URL_API +
-                "?accion=buscar" +
-                "&codigo=" +
-                encodeURIComponent(
-                    codigoParticipanteActual
-                ) +
-                "&_=" +
-                Date.now(),
-                {
-                    cache: "no-store"
-                }
-            );
+        const respuesta = await fetch(
+            URL_API +
+            "?accion=buscar" +
+            "&codigo=" +
+            encodeURIComponent(codigoParticipanteActual) +
+            "&_=" + Date.now(),
+            {
+                cache: "no-store"
+            }
+        );
 
         if (!respuesta.ok) {
-
             throw new Error(
-                "Error HTTP " +
-                respuesta.status
+                "Error HTTP " + respuesta.status
             );
         }
 
-        const datos =
-            await respuesta.json();
+        const datos = await respuesta.json();
 
-        /*
-         * Mientras siga ASIGNADO
-         * no hacemos absolutamente nada.
-         */
+        // Mostrar errores del servidor
+        if (datos.exito === false) {
+            throw new Error(
+                datos.mensaje || "Error del servidor"
+            );
+        }
 
-        if (
-            datos.encontrado === true &&
-            datos.estado === "INGRESADO"
-        ) {
+        if (datos.encontrado !== true) {
+            console.warn(
+                "No se encontró el registro:",
+                codigoParticipanteActual
+            );
+            return;
+        }
 
+        const estado = String(datos.estado || "")
+            .trim()
+            .toUpperCase();
+
+        console.log(
+            "Estado actual de la reserva:",
+            estado
+        );
+
+        // =====================================
+        // CASO 1: INGRESO CONFIRMADO
+        // =====================================
+
+        if (estado === "INGRESADO") {
+
+            detenerTemporizador();
             detenerVigilanciaIngreso();
 
-            mostrarNotificacionIngreso(
-                datos
-            );
+            if (temporizadorReserva) {
+                temporizadorReserva.hidden = true;
+            }
+
+            mostrarNotificacionIngreso(datos);
+
+            return;
+        }
+
+        // =====================================
+        // CASO 2: RESERVA VENCIDA
+        // =====================================
+
+        if (estado === "VENCIDO") {
+
+            mostrarReservaVencida();
+
+            return;
+        }
+
+        // =====================================
+        // CASO 3: RESERVA TODAVÍA ACTIVA
+        // =====================================
+
+        if (estado === "ASIGNADO") {
+
+            // No reiniciamos el tiempo.
+            // El servidor conserva el vencimiento.
+
+            if (vencimientoNotificado) {
+
+                const fecha = Date.parse(
+                    datos.venceEn || ""
+                );
+
+                const ahoraServidor = Date.parse(
+                    datos.servidorAhora || ""
+                );
+
+                // Si el servidor todavía no ha
+                // alcanzado el vencimiento, se
+                // puede continuar el contador.
+                if (
+                    Number.isFinite(fecha) &&
+                    Number.isFinite(ahoraServidor) &&
+                    ahoraServidor < fecha
+                ) {
+
+                    configurarTemporizador(datos);
+
+                } else {
+
+                    // Esperar la siguiente consulta
+                    // para confirmar el vencimiento.
+                    if (temporizadorEstado) {
+                        temporizadorEstado.textContent =
+                            "VERIFICANDO ESTADO";
+                    }
+                }
+            }
         }
 
     } catch (error) {
 
-        /*
-         * Un fallo temporal de Internet
-         * no debe molestar al participante.
-         * Simplemente volveremos a consultar.
-         */
-
         console.warn(
-            "No se pudo consultar temporalmente el estado:",
+            "Error al consultar la reserva:",
             error
         );
 
+        // No declarar vencida una reserva
+        // solamente por un fallo de conexión.
+
+        if (
+            vencimientoNotificado &&
+            temporizadorMensaje
+        ) {
+            temporizadorMensaje.textContent =
+                "Estamos comprobando tu reserva. " +
+                "Verifica tu conexión a Internet.";
+        }
+
     } finally {
 
-        consultandoEstadoParticipante =
-            false;
+        consultandoEstadoParticipante = false;
+
     }
 }
 
