@@ -22,6 +22,8 @@ const pantallaInicio =
 const pantallaRegistro =
     document.getElementById("pantalla-registro");
 
+const pantallaRecuperar = document.getElementById("pantalla-recuperar");
+
 const pantallaAsignacion =
     document.getElementById("pantalla-asignacion");
 
@@ -64,6 +66,12 @@ const loaderMensaje =
 
 const btnRegistrar =
     document.getElementById("btn-registrar");
+
+const btnRecuperar = document.getElementById("btn-recuperar");
+const btnVolverRecuperar = document.getElementById("btn-volver-recuperar");
+const formRecuperar = document.getElementById("form-recuperar");
+const telefonoRecuperar = document.getElementById("telefono-recuperar");
+const btnConsultarRecuperar = document.getElementById("btn-consultar-recuperar");
 
 const btnEncargado =
     document.getElementById("btn-encargado");
@@ -370,6 +378,7 @@ function ocultarPantallas() {
     const pantallas = [
         pantallaInicio,
         pantallaRegistro,
+        pantallaRecuperar,
         pantallaAsignacion,
         pantallaLoginEncargado,
         pantallaEncargado,
@@ -721,6 +730,65 @@ if (btnVolverRegistro) {
     );
 }
 
+
+// =========================================================
+// RECUPERAR REGISTRO POR TELÉFONO
+// =========================================================
+
+if (btnRecuperar) {
+    btnRecuperar.addEventListener("click", function () {
+        if (formRecuperar) formRecuperar.reset();
+        mostrarPantalla(pantallaRecuperar);
+        setTimeout(function () {
+            if (telefonoRecuperar) telefonoRecuperar.focus();
+        }, 300);
+    });
+}
+
+if (btnVolverRecuperar) {
+    btnVolverRecuperar.addEventListener("click", mostrarInicio);
+}
+
+if (formRecuperar) {
+    formRecuperar.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        const telefono = telefonoRecuperar.value.trim();
+        if (!/^\d{8}$/.test(telefono)) {
+            mostrarNotificacionJDJ(
+                "Revisa tu número",
+                "Ingresa el número de celular de 8 dígitos que utilizaste al registrarte."
+            );
+            return;
+        }
+        try {
+            bloquearBoton(btnConsultarRecuperar, true);
+            mostrarLoader("Buscando tu registro", "Consultando tu pase de ingreso...");
+            const respuesta = await fetch(
+                URL_API + "?accion=recuperar&telefono=" + encodeURIComponent(telefono),
+                { cache: "no-store" }
+            );
+            if (!respuesta.ok) throw new Error("Error HTTP " + respuesta.status);
+            const datos = await respuesta.json();
+            if (datos.exito !== true) {
+                mostrarNotificacionJDJ(
+                    "No encontramos tu registro",
+                    datos.mensaje || "Revisa el número e inténtalo nuevamente."
+                );
+                return;
+            }
+            mostrarAsignacion(datos, true);
+        } catch (error) {
+            console.error("Error recuperando registro:", error);
+            mostrarNotificacionJDJ(
+                "No pudimos recuperar tu registro",
+                "Comprueba tu conexión e inténtalo nuevamente."
+            );
+        } finally {
+            ocultarLoader();
+            bloquearBoton(btnConsultarRecuperar, false);
+        }
+    });
+}
 
 // =========================================================
 // 19. ITINERARIO
@@ -1631,21 +1699,17 @@ if (formRegistro) {
                 tipoVehiculo.value.trim();
 
             if (nombre === "") {
-
                 nombrePiloto.focus();
+                return;
+            }
 
-            
-if (!/^\d{8}$/.test(telefono)) {
-
-    alert(
-        "Ingresa un número de teléfono válido de 8 dígitos."
-    );
-
-    telefonoPiloto.focus();
-
-    return;
-}
-
+            if (!/^\d{8}$/.test(telefono)) {
+                mostrarNotificacionJDJ(
+                    "Número de teléfono inválido",
+                    "Ingresa un número de teléfono válido de 8 dígitos."
+                );
+                telefonoPiloto.focus();
+                return;
             }
 
             if (tipo === "") {
@@ -1751,7 +1815,17 @@ if (datos.exito !== true) {
 // 33. MOSTRAR ASIGNACIÓN
 // =========================================================
 
-function mostrarAsignacion(datos) {
+function mostrarAsignacion(datos, recuperado = false) {
+
+    const titulo = document.getElementById("asignacion-titulo");
+    const etiqueta = document.getElementById("asignacion-eyebrow");
+    const estadoVisual = document.getElementById("asignacion-estado");
+    if (titulo) titulo.textContent = recuperado ? "¡Registro recuperado!" : "¡Parqueo asignado!";
+    if (etiqueta) etiqueta.textContent = recuperado ? "TU REGISTRO JDJ" : "REGISTRO COMPLETADO";
+    if (estadoVisual) {
+        const ingresado = String(datos.estado || "").toUpperCase() === "INGRESADO";
+        estadoVisual.lastChild.textContent = ingresado ? " INGRESADO" : " ACTIVO";
+    }
 
     codigoIngreso.textContent =
         datos.codigo;
@@ -1804,10 +1878,11 @@ function mostrarAsignacion(datos) {
         pantallaAsignacion
     );
 
-    iniciarVigilanciaIngreso(
-    datos.codigo,
-    datos.nombreParqueo
-);
+    if (String(datos.estado || "").toUpperCase() === "INGRESADO") {
+        detenerVigilanciaIngreso();
+    } else {
+        iniciarVigilanciaIngreso(datos.codigo, datos.nombreParqueo);
+    }
 }
 
 // =========================================================

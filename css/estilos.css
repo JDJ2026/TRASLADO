@@ -3991,3 +3991,40 @@ select:focus-visible {
         animation: none;
     }
 }
+
+/* =========================================================
+   RECUPERACIÓN DEL PASE JDJ
+========================================================= */
+.inicio-recuperar {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    width: 100%;
+    margin-top: 12px;
+    padding: 15px 16px;
+    text-align: left;
+    color: var(--texto);
+    background: var(--blanco);
+    border: 1px solid var(--borde-fuerte);
+    border-radius: 18px;
+    box-shadow: var(--sombra-suave);
+    transition: transform var(--transicion), border-color var(--transicion);
+}
+.inicio-recuperar:active { transform: scale(.985); }
+.inicio-recuperar:focus-visible { outline: 3px solid var(--azul); outline-offset: 3px; }
+.inicio-recuperar-icono {
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    background: var(--azul-suave);
+    color: var(--azul-fuerte);
+    border-radius: 13px;
+}
+.inicio-recuperar-icono svg { width: 23px; height: 23px; }
+.inicio-recuperar-texto { display: grid; gap: 4px; flex: 1; min-width: 0; }
+.inicio-recuperar-texto strong { font-size: 14px; font-weight: 800; }
+.inicio-recuperar-texto small { color: var(--texto-2); font-size: 11px; line-height: 1.4; }
+.inicio-recuperar-flecha { color: var(--texto-3); width: 19px; height: 19px; }
+.recuperar-formulario { margin-top: 22px; }

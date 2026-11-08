@@ -23,7 +23,7 @@
 
     <link
         rel="stylesheet"
-        href="css/estilos.css?v=33"
+        href="css/estilos.css?v=35"
     >
 </head>
 
@@ -243,6 +243,16 @@
             </button>
 
 
+
+            <!-- RECUPERAR REGISTRO -->
+            <button id="btn-recuperar" class="inicio-recuperar" type="button">
+                <span class="inicio-recuperar-icono"><i data-lucide="ticket-check"></i></span>
+                <span class="inicio-recuperar-texto">
+                    <strong>Recuperar mi registro</strong>
+                    <small>Consulta tu código QR con tu número de celular</small>
+                </span>
+                <i data-lucide="chevron-right" class="inicio-recuperar-flecha"></i>
+            </button>
 
             <!-- SECUNDARIOS -->
 
@@ -669,6 +679,55 @@
 
 
     <!-- =====================================================
+         RECUPERAR REGISTRO
+    ====================================================== -->
+    <section id="pantalla-recuperar" class="pantalla">
+        <div class="registro-app">
+            <header class="registro-header">
+                <button id="btn-volver-recuperar" class="btn-volver" type="button" aria-label="Volver al inicio">
+                    <i data-lucide="arrow-left"></i>
+                </button>
+                <div class="registro-header-identidad">
+                    <div>
+                        <span class="registro-eyebrow">JDJ · SAN JUAN 2026</span>
+                        <strong>Recuperar registro</strong>
+                    </div>
+                </div>
+            </header>
+            <section class="registro-presentacion">
+                <div class="registro-icono-principal"><i data-lucide="ticket-check"></i></div>
+                <div>
+                    <span class="pantalla-acento pantalla-acento-azul">TU PASE DIGITAL</span>
+                    <h1>Recupera tu código QR</h1>
+                    <p>Ingresa el número de celular que utilizaste al registrar tu vehículo.</p>
+                </div>
+            </section>
+            <form id="form-recuperar" class="recuperar-formulario">
+                <div class="registro-form-header">
+                    <span class="registro-form-eyebrow">CONSULTA</span>
+                    <h2>Tu número de celular</h2>
+                    <p>Te mostraremos tu registro y el parqueo asignado.</p>
+                </div>
+                <div class="campo registro-campo">
+                    <label for="telefono-recuperar">Número de teléfono</label>
+                    <div class="registro-input-wrapper">
+                        <span class="registro-input-icono"><i data-lucide="phone"></i></span>
+                        <input type="tel" id="telefono-recuperar" name="telefono-recuperar"
+                            placeholder="Ej: 41234567" autocomplete="tel-national"
+                            inputmode="numeric" pattern="[0-9]{8}" minlength="8"
+                            maxlength="8" title="Ingresa un número de 8 dígitos" required>
+                    </div>
+                </div>
+                <button id="btn-consultar-recuperar" class="btn-principal registro-continuar" type="submit">
+                    <span class="btn-texto">RECUPERAR MI REGISTRO</span>
+                    <i data-lucide="arrow-right"></i>
+                </button>
+            </form>
+            <p class="registro-footer">JDJ San Juan 2026</p>
+        </div>
+    </section>
+
+    <!-- =====================================================
          PARQUEO ASIGNADO
     ====================================================== -->
 
@@ -689,12 +748,12 @@
                 </div>
 
 
-                <span class="asignacion-eyebrow">
+                <span id="asignacion-eyebrow" class="asignacion-eyebrow">
                     REGISTRO COMPLETADO
                 </span>
 
 
-                <h1>
+                <h1 id="asignacion-titulo">
                     ¡Parqueo asignado!
                 </h1>
 
@@ -869,7 +928,7 @@
                     </div>
 
 
-                    <span class="asignacion-estado">
+                    <span id="asignacion-estado" class="asignacion-estado">
 
                         <span class="estado-punto"></span>
 
@@ -2256,7 +2315,7 @@
 
     <!-- LÓGICA JDJ -->
 
-    <script src="js/app.js?v=34"></script>
+    <script src="js/app.js?v=35"></script>
 
 </body>
 
