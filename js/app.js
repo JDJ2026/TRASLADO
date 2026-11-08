@@ -2116,53 +2116,41 @@ function mostrarAsignacion(datos, recuperado = false) {
 configurarTemporizador(datos);
 
    
-if (
-    datos.encontrado === true &&
-    datos.estado === "INGRESADO"
-) {
 
-    detenerTemporizador();
-    detenerVigilanciaIngreso();
+    // =========================================
+    // INICIAR VIGILANCIA DEL PARTICIPANTE
+    // =========================================
 
-    if (temporizadorReserva) {
-        temporizadorReserva.hidden = true;
+    const estadoReserva = String(
+        datos.estado || "ASIGNADO"
+    ).trim().toUpperCase();
+
+    // Guardar el código para consultar el estado
+    codigoParticipanteActual = String(
+        datos.codigo || ""
+    ).trim().toUpperCase();
+
+    parqueoParticipanteActual = String(
+        datos.nombreParqueo || ""
+    ).trim();
+
+    if (estadoReserva === "ASIGNADO") {
+
+        iniciarVigilanciaIngreso(
+            codigoParticipanteActual,
+            parqueoParticipanteActual
+        );
+
+    } else {
+
+        detenerVigilanciaIngreso();
+
+        if (estadoReserva === "VENCIDO") {
+            mostrarReservaVencida();
+        }
+
     }
 
-    const estadoVisual = document.getElementById(
-        "asignacion-estado"
-    );
-
-    if (estadoVisual) {
-        estadoVisual.textContent = "INGRESADO";
-    }
-
-    mostrarNotificacionIngreso(datos);
-
-} else if (
-    datos.encontrado === true &&
-    datos.estado === "VENCIDO"
-) {
-
-    mostrarReservaVencida();
-
-} else if (
-    datos.encontrado === true &&
-    datos.estado === "ASIGNADO" &&
-    vencimientoNotificado
-) {
-
-    // El servidor todavía considera activa
-    // la reserva. Continuar verificando.
-    vencimientoNotificado = false;
-
-    temporizadorEstado.textContent =
-        "VERIFICANDO ESTADO";
-
-    temporizadorMensaje.textContent =
-        "Comprobando el vencimiento de tu reserva...";
-
-    setTimeout(consultarEstadoParticipante, 1500);
-}
 
 }
 
