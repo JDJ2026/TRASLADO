@@ -320,6 +320,36 @@ let parqueoParticipanteActual = "";
 let consultandoEstadoParticipante = false;
 
 
+// =========================================
+// TEMPORIZADOR DE RESERVA
+// =========================================
+
+let intervaloTemporizador = null;
+let fechaVencimientoReserva = null;
+let duracionReservaMs = 0;
+let diferenciaHoraServidor = 0;
+let vencimientoNotificado = false;
+
+const temporizadorReserva =
+    document.getElementById("temporizador-reserva");
+
+const temporizadorTiempo =
+    document.getElementById("temporizador-tiempo");
+
+const temporizadorEstado =
+    document.getElementById("temporizador-estado");
+
+const temporizadorMensaje =
+    document.getElementById("temporizador-mensaje");
+
+const temporizadorProgreso =
+    document.getElementById("temporizador-progreso");
+
+const temporizadorBarra =
+    document.getElementById("temporizador-barra-relleno");
+
+
+
 // =========================================================
 // 13. FUNCIONES GENERALES
 // =========================================================
@@ -1811,6 +1841,210 @@ if (datos.exito !== true) {
 }
 
 
+// =========================================
+// FUNCIONES DEL TEMPORIZADOR JDJ
+// =========================================
+
+function detenerTemporizador() {
+
+    if (intervaloTemporizador !== null) {
+        clearInterval(intervaloTemporizador);
+        intervaloTemporizador = null;
+    }
+}
+
+
+function configurarTemporizador(datos) {
+
+    detenerTemporizador();
+
+    vencimientoNotificado = false;
+
+    if (!temporizadorReserva) return;
+
+    const estado = String(datos.estado || "")
+        .trim()
+        .toUpperCase();
+
+    // Si ya ingresó, no necesita contador
+    if (estado === "INGRESADO") {
+        temporizadorReserva.hidden = true;
+        return;
+    }
+
+    const fecha = Date.parse(datos.venceEn || "");
+
+    // Reservas antiguas sin vencimiento
+    if (!Number.isFinite(fecha)) {
+        temporizadorReserva.hidden = true;
+        return;
+    }
+
+    fechaVencimientoReserva = fecha;
+
+    // Corregir diferencia entre reloj del
+    // teléfono y hora informada por servidor
+    const horaServidor = Date.parse(
+        datos.servidorAhora || ""
+    );
+
+    diferenciaHoraServidor =
+        Number.isFinite(horaServidor)
+            ? horaServidor - Date.now()
+            : 0;
+
+    // Duración configurada en el backend.
+    // Si se recupera un QR, la duración se
+    // calcula a partir de su fecha de registro.
+    const minutos = Number(datos.duracionMinutos);
+
+    duracionReservaMs =
+        Number.isFinite(minutos) && minutos > 0
+            ? minutos * 60000
+            : Math.max(
+                fechaVencimientoReserva -
+                (Date.now() + diferenciaHoraServidor),
+                1000
+            );
+
+    temporizadorReserva.hidden = false;
+
+    temporizadorReserva.classList.remove(
+        "urgente", "vencido"
+    );
+
+    actualizarTemporizador();
+
+    intervaloTemporizador = setInterval(
+        actualizarTemporizador,
+        1000
+    );
+}
+
+
+function actualizarTemporizador() {
+
+    if (fechaVencimientoReserva === null) {
+        return;
+    }
+
+    const ahoraEstimado =
+        Date.now() + diferenciaHoraServidor;
+
+    const restante = Math.max(
+        0,
+        fechaVencimientoReserva - ahoraEstimado
+    );
+
+    const segundos = Math.ceil(restante / 1000);
+
+    const minutosTexto = String(
+        Math.floor(segundos / 60)
+    ).padStart(2, "0");
+
+    const segundosTexto = String(
+        segundos % 60
+    ).padStart(2, "0");
+
+    temporizadorTiempo.textContent =
+        minutosTexto + ":" + segundosTexto;
+
+    const porcentaje = Math.min(
+        100,
+        Math.max(
+            0,
+            (restante / duracionReservaMs) * 100
+        )
+    );
+
+    temporizadorBarra.style.width =
+        porcentaje + "%";
+
+    temporizadorProgreso.setAttribute(
+        "aria-valuenow",
+        String(Math.round(porcentaje))
+    );
+
+    const urgente =
+        restante > 0 && restante <= 30000;
+
+    temporizadorReserva.classList.toggle(
+        "urgente",
+        urgente
+    );
+
+    temporizadorEstado.textContent =
+        urgente ? "ÚLTIMOS SEGUNDOS" : "RESERVA ACTIVA";
+
+    temporizadorMensaje.textContent =
+        urgente
+            ? "¡Apresúrate! Tu reserva está por vencer."
+            : "Llega a tu parqueo antes de que termine el tiempo para conservar tu reserva.";
+
+    if (restante === 0 && !vencimientoNotificado) {
+
+        vencimientoNotificado = true;
+
+        detenerTemporizador();
+
+        temporizadorEstado.textContent =
+            "VERIFICANDO ESTADO";
+
+        temporizadorMensaje.textContent =
+            "Se terminó el plazo. Estamos comprobando el estado de tu reserva.";
+
+        // Consultar al servidor para confirmar
+        // si venció o si ya ingresó
+        consultarEstadoParticipante();
+    }
+}
+
+
+function mostrarReservaVencida() {
+
+    detenerTemporizador();
+    detenerVigilanciaIngreso();
+
+    temporizadorReserva.hidden = false;
+
+    temporizadorReserva.classList.remove(
+        "urgente"
+    );
+
+    temporizadorReserva.classList.add(
+        "vencido"
+    );
+
+    temporizadorTiempo.textContent = "00:00";
+
+    temporizadorEstado.textContent =
+        "RESERVA VENCIDA";
+
+    temporizadorMensaje.textContent =
+        "Tu tiempo terminó y el espacio fue liberado.";
+
+    temporizadorBarra.style.width = "0%";
+
+    temporizadorProgreso.setAttribute(
+        "aria-valuenow",
+        "0"
+    );
+
+    const estadoVisual = document.getElementById(
+        "asignacion-estado"
+    );
+
+    if (estadoVisual) {
+        estadoVisual.textContent = "VENCIDO";
+    }
+
+    mostrarNotificacionJDJ(
+        "Tu reserva ha vencido",
+        "Se terminó el tiempo permitido para llegar. Tu espacio fue liberado y este QR ya no permite confirmar el ingreso."
+    );
+}
+
+
 // =========================================================
 // 33. MOSTRAR ASIGNACIÓN
 // =========================================================
@@ -1878,11 +2112,58 @@ function mostrarAsignacion(datos, recuperado = false) {
         pantallaAsignacion
     );
 
-    if (String(datos.estado || "").toUpperCase() === "INGRESADO") {
-        detenerVigilanciaIngreso();
-    } else {
-        iniciarVigilanciaIngreso(datos.codigo, datos.nombreParqueo);
+    // Mostrar el tiempo restante de la reserva
+configurarTemporizador(datos);
+
+   
+if (
+    datos.encontrado === true &&
+    datos.estado === "INGRESADO"
+) {
+
+    detenerTemporizador();
+    detenerVigilanciaIngreso();
+
+    if (temporizadorReserva) {
+        temporizadorReserva.hidden = true;
     }
+
+    const estadoVisual = document.getElementById(
+        "asignacion-estado"
+    );
+
+    if (estadoVisual) {
+        estadoVisual.textContent = "INGRESADO";
+    }
+
+    mostrarNotificacionIngreso(datos);
+
+} else if (
+    datos.encontrado === true &&
+    datos.estado === "VENCIDO"
+) {
+
+    mostrarReservaVencida();
+
+} else if (
+    datos.encontrado === true &&
+    datos.estado === "ASIGNADO" &&
+    vencimientoNotificado
+) {
+
+    // El servidor todavía considera activa
+    // la reserva. Continuar verificando.
+    vencimientoNotificado = false;
+
+    temporizadorEstado.textContent =
+        "VERIFICANDO ESTADO";
+
+    temporizadorMensaje.textContent =
+        "Comprobando el vencimiento de tu reserva...";
+
+    setTimeout(consultarEstadoParticipante, 1500);
+}
+
 }
 
 // =========================================================

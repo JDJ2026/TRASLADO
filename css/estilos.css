@@ -4028,3 +4028,143 @@ select:focus-visible {
 .inicio-recuperar-texto small { color: var(--texto-2); font-size: 11px; line-height: 1.4; }
 .inicio-recuperar-flecha { color: var(--texto-3); width: 19px; height: 19px; }
 .recuperar-formulario { margin-top: 22px; }
+
+
+/* =========================================
+   TEMPORIZADOR JDJ
+========================================== */
+
+.temporizador-reserva {
+    margin: 18px 0;
+    padding: 22px 20px;
+    background: #ffffff;
+    border: 1px solid #e4ebf1;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(23,36,51,.06);
+    text-align: center;
+}
+
+.temporizador-reserva[hidden] {
+    display: none !important;
+}
+
+.temporizador-encabezado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.temporizador-etiqueta {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #536273;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .04em;
+}
+
+.temporizador-etiqueta svg {
+    width: 16px;
+    height: 16px;
+}
+
+.temporizador-estado {
+    padding: 6px 9px;
+    border-radius: 999px;
+    background: #edf9f0;
+    color: #28873e;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.temporizador-tiempo {
+    margin: 18px 0;
+    font-size: clamp(48px, 12vw, 68px);
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: -2px;
+    font-variant-numeric: tabular-nums;
+    color: #172433;
+}
+
+.temporizador-barra {
+    height: 10px;
+    background: #e9eff4;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.temporizador-barra-relleno {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: #39a852;
+    transition: width .3s linear;
+}
+
+.temporizador-mensaje {
+    margin-top: 14px;
+    color: #536273;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+/* Últimos 30 segundos */
+
+.temporizador-reserva.urgente {
+    border-color: #f3b4ad;
+    background: #fff8f7;
+}
+
+.temporizador-reserva.urgente
+.temporizador-tiempo {
+    color: #e94e3d;
+}
+
+.temporizador-reserva.urgente
+.temporizador-barra-relleno {
+    background: #e94e3d;
+}
+
+.temporizador-reserva.urgente
+.temporizador-estado {
+    color: #b93b2f;
+    background: #fff0ee;
+}
+
+/* Reserva vencida */
+
+.temporizador-reserva.vencido {
+    border-color: #e94e3d;
+    background: #fff0ee;
+}
+
+.temporizador-reserva.vencido
+.temporizador-tiempo {
+    color: #e94e3d;
+}
+
+.temporizador-reserva.vencido
+.temporizador-estado {
+    background: #e94e3d;
+    color: white;
+}
+
+.temporizador-reserva.vencido
+.temporizador-barra-relleno {
+    width: 0 !important;
+}
+
+@media (max-width: 420px) {
+    .temporizador-reserva {
+        padding: 18px 15px;
+    }
+
+    .temporizador-etiqueta {
+        font-size: 10px;
+    }
+}
+
