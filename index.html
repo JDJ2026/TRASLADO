@@ -23,7 +23,7 @@
 
     <link
         rel="stylesheet"
-        href="css/estilos.css?v=32"
+        href="css/estilos.css?v=33"
     >
 </head>
 
@@ -2212,9 +2212,51 @@
 </div>
 
 
+<!-- MODAL DE NOTIFICACIONES JDJ -->
+<div id="modal-notificacion-jdj"
+     class="modal-notificacion-jdj"
+     role="alertdialog"
+     aria-modal="true"
+     aria-labelledby="notificacion-titulo"
+     aria-describedby="notificacion-mensaje"
+     aria-hidden="true">
+
+    <div class="notificacion-jdj-contenido">
+
+        <div class="notificacion-jdj-icono">
+            <i data-lucide="circle-alert"></i>
+        </div>
+
+        <h2 id="notificacion-titulo">
+            ¡Ya tienes un registro!
+        </h2>
+
+        <p id="notificacion-mensaje">
+            Este número de teléfono ya tiene un registro.
+        </p>
+
+        <div class="notificacion-jdj-ayuda">
+            <i data-lucide="info"></i>
+            <span>
+                Si necesitas ayuda, comunícate
+                con nuestro equipo de organización.
+            </span>
+        </div>
+
+        <button type="button"
+                id="btn-cerrar-notificacion-jdj"
+                class="notificacion-jdj-boton">
+            ENTENDIDO
+        </button>
+
+    </div>
+</div>
+
+
+
     <!-- LÓGICA JDJ -->
 
-    <script src="js/app.js?v=33"></script>
+    <script src="js/app.js?v=34"></script>
 
 </body>
 

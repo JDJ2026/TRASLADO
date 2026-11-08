@@ -316,6 +316,55 @@ let consultandoEstadoParticipante = false;
 // 13. FUNCIONES GENERALES
 // =========================================================
 
+
+function mostrarNotificacionJDJ(titulo, mensaje) {
+
+    const modal = document.getElementById(
+        "modal-notificacion-jdj"
+    );
+
+    if (!modal) {
+        alert(mensaje);
+        return;
+    }
+
+    document.getElementById(
+        "notificacion-titulo"
+    ).textContent = titulo;
+
+    document.getElementById(
+        "notificacion-mensaje"
+    ).textContent = mensaje;
+
+    modal.classList.add("activo");
+    modal.setAttribute("aria-hidden", "false");
+
+    const boton = document.getElementById(
+        "btn-cerrar-notificacion-jdj"
+    );
+
+    if (boton) {
+        boton.focus();
+    }
+}
+
+function cerrarNotificacionJDJ() {
+
+    const modal = document.getElementById(
+        "modal-notificacion-jdj"
+    );
+
+    if (!modal) return;
+
+    modal.classList.remove("activo");
+    modal.setAttribute("aria-hidden", "true");
+}
+
+document.getElementById(
+    "btn-cerrar-notificacion-jdj"
+)?.addEventListener("click", cerrarNotificacionJDJ);
+
+
 function ocultarPantallas() {
 
     const pantallas = [
@@ -1646,17 +1695,28 @@ if (!/^\d{8}$/.test(telefono)) {
                     datos
                 );
 
-                if (
-                    datos.exito !== true
-                ) {
+                
+if (datos.exito !== true) {
 
-                    alert(
-                        datos.mensaje ||
-                        "No se pudo realizar el registro."
-                    );
+    if (datos.duplicado === true) {
 
-                    return;
-                }
+        mostrarNotificacionJDJ(
+            "¡Ya tienes un registro!",
+            "Este número de teléfono ya está asociado a un vehículo registrado. No puedes reservar otro espacio."
+        );
+
+    } else {
+
+        mostrarNotificacionJDJ(
+            "No pudimos completar tu registro",
+            datos.mensaje ||
+            "Intenta nuevamente en unos momentos."
+        );
+    }
+
+    return;
+}
+
 
                 mostrarAsignacion(
                     datos
