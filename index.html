@@ -2,6 +2,9 @@
 <html lang="es">
 
 <head>
+    <meta name="referrer" content="no-referrer">
+    <!-- Las solicitudes del sistema usan fetch, no envíos nativos de formularios. -->
+    <meta http-equiv="Content-Security-Policy" content="base-uri 'none'; object-src 'none'; form-action 'none'">
     <meta charset="UTF-8">
 
     <meta
@@ -20,15 +23,18 @@
     >
 
     <title>JDJ San Juan 2026</title>
+    <link rel="icon" type="image/webp" href="img/logo-jdj.webp">
 
     <link
         rel="stylesheet"
-        href="css/estilos.css?v=37"
+        href="css/estilos.css?v=20261113-2"
     >
 </head>
 
 
 <body>
+    <p id="conexion-aviso" class="conexion-aviso" role="status" aria-live="polite" hidden style="display:none"></p>
+    <noscript><p class="inicio-error">Activa JavaScript para utilizar el registro. Si necesitas ayuda, <a href="https://wa.me/50241151019" target="_blank" rel="noopener noreferrer">contacta al equipo de Traslado</a>.</p></noscript>
 
 
     <!-- =====================================================
@@ -70,13 +76,12 @@
 
 
             <p>
-                Sistema de Parqueos
+                Traslado de Parqueos
             </p>
 
         </div>
 
     </div>
-
 
 
     <!-- =====================================================
@@ -125,7 +130,6 @@
         </div>
 
     </div>
-
 
 
     <!-- =====================================================
@@ -204,7 +208,6 @@
         </header>
 
 
-
         <!-- ACCIONES -->
 
         <section class="inicio-acciones">
@@ -241,7 +244,6 @@
                 </span>
 
             </button>
-
 
 
             <!-- RECUPERAR REGISTRO -->
@@ -285,7 +287,6 @@
                 </button>
 
 
-
                 <button
                     id="btn-ayuda"
                     class="inicio-tarjeta inicio-tarjeta-ayuda"
@@ -316,7 +317,6 @@
         </section>
 
 
-
         <!-- MENSAJE -->
 
         <div class="inicio-mensaje">
@@ -332,7 +332,6 @@
             </span>
 
         </div>
-
 
 
         <!-- PERSONAL -->
@@ -386,7 +385,6 @@
         </section>
 
 
-
         <footer class="inicio-footer">
 
             <div class="inicio-footer-colores">
@@ -406,7 +404,6 @@
     </main>
 
 
-
     <!-- =====================================================
          REGISTRO
     ====================================================== -->
@@ -414,6 +411,7 @@
     <section
         id="pantalla-registro"
         class="pantalla"
+        hidden
     >
 
         <div class="registro-app">
@@ -453,7 +451,6 @@
             </header>
 
 
-
             <section class="registro-presentacion">
 
                 <div class="registro-icono-principal">
@@ -481,7 +478,6 @@
             </section>
 
 
-
             <div class="registro-progreso">
 
                 <div class="registro-progreso-info">
@@ -504,7 +500,6 @@
             </div>
 
 
-
             <form id="form-registro">
 
 
@@ -525,7 +520,6 @@
                 </div>
 
 
-
                 <div class="campo registro-campo">
 
                     <label for="nombre-piloto">
@@ -543,6 +537,7 @@
                         <input
                             type="text"
                             id="nombre-piloto"
+                            maxlength="120"
                             placeholder="Ej: Candy Cholotío"
                             autocomplete="name"
                             required
@@ -584,8 +579,6 @@
     </div>
 
 </div>
-
-
 
 
                 <div class="campo registro-campo">
@@ -634,7 +627,18 @@
                 </div>
 
 
-
+                <div class="campo registro-campo">
+                    <label for="fecha-salida">¿Hasta cuándo permanecerá tu vehículo?</label>
+                    <div class="registro-input-wrapper">
+                        <span class="registro-input-icono"><i data-lucide="calendar-days" aria-hidden="true"></i></span>
+                        <select id="fecha-salida" name="fechaSalida" required>
+                            <option value="">Selecciona el día previsto de salida</option>
+                            <option value="2026-11-21">Hasta el sábado 21 de noviembre</option>
+                            <option value="2026-11-22">Hasta el domingo 22 de noviembre</option>
+                        </select>
+                    </div>
+                    <small class="campo-ayuda">Este dato ayuda a organizar la jornada. Avisa al encargado cuando realmente retires tu vehículo.</small>
+                </div>
                 <div class="registro-aviso">
 
                     <span class="registro-aviso-icono">
@@ -643,12 +647,11 @@
 
 
                     <p>
-                        Utilizaremos estos datos únicamente para
-                        asignarte el parqueo más adecuado para tu vehículo.
+                        Usaremos estos datos para organizar tu parqueo y registrar su ingreso y salida.
+                        Durante la jornada, tu reserva tendrá dos horas de vigencia para llegar.
                     </p>
 
                 </div>
-
 
 
                 <button
@@ -677,11 +680,11 @@
     </section>
 
 
-
     <!-- =====================================================
          RECUPERAR REGISTRO
     ====================================================== -->
-    <section id="pantalla-recuperar" class="pantalla">
+    <section id="pantalla-recuperar" class="pantalla"
+        hidden>
         <div class="registro-app">
             <header class="registro-header">
                 <button id="btn-volver-recuperar" class="btn-volver" type="button" aria-label="Volver al inicio">
@@ -734,6 +737,7 @@
     <section
         id="pantalla-asignacion"
         class="pantalla"
+        hidden
     >
 
         <div class="asignacion-app">
@@ -758,13 +762,9 @@
                 </h1>
 
 
-                <p>
-                    Todo está listo para tu llegada a
-                    JDJ San Juan 2026.
-                </p>
+                <p id="asignacion-subtitulo">Tu llegada a JDJ San Juan 2026, organizada.</p>
 
             </header>
-
 
 
             <!-- TARJETA PARQUEO -->
@@ -811,7 +811,6 @@
                 </div>
 
 
-
                 <div class="asignacion-ruta-info">
 
                     <span class="asignacion-ruta-icono">
@@ -832,7 +831,6 @@
                     </div>
 
                 </div>
-
 
 
                 <div class="asignacion-rutas">
@@ -868,7 +866,6 @@
                         ></i>
 
                     </button>
-
 
 
                     <button
@@ -939,7 +936,7 @@
         class="temporizador-tiempo"
         role="timer"
     >
-        02:00
+        02:00:00
     </div>
 
     <div
@@ -965,7 +962,12 @@
 </section>
 
 
-
+            <section class="comprobante-detalles" aria-label="Datos del comprobante">
+                <div><span>Piloto</span><strong id="comprobante-piloto">—</strong></div>
+                <div><span>Salida prevista</span><strong id="comprobante-fecha-salida">—</strong></div>
+                <p id="comprobante-mensaje" role="status" aria-live="polite"></p>
+                <small id="comprobante-actualizacion">Pendiente de verificación.</small>
+            </section>
             <!-- PASE DIGITAL -->
 
             <section class="asignacion-pase">
@@ -997,7 +999,6 @@
                 </div>
 
 
-
                 <div class="asignacion-qr-contenedor">
 
                     <div class="qr-esquina qr-esquina-1"></div>
@@ -1012,7 +1013,6 @@
                     ></div>
 
                 </div>
-
 
 
                 <strong
@@ -1035,7 +1035,6 @@
             </section>
 
 
-
             <div class="asignacion-aviso">
 
                 <i data-lucide="camera"></i>
@@ -1047,10 +1046,15 @@
 
             </div>
 
+                    <div class="comprobante-acciones">
+                <button id="btn-solicitar-salida" class="btn-principal" type="button" hidden style="display:none"><span class="btn-texto">Solicitar salida</span></button>
+                <button id="btn-nueva-reserva" class="btn-principal" type="button" hidden style="display:none">Registrar nuevamente</button>
+                <button id="btn-actualizar-comprobante" class="btn-secundario" type="button">Actualizar comprobante</button>
+                <button id="btn-inicio-asignacion" class="btn-secundario" type="button">Volver al inicio</button>
+            </div>
         </div>
 
     </section>
-
 
 
     <!-- =====================================================
@@ -1060,6 +1064,7 @@
     <section
         id="pantalla-login-encargado"
         class="pantalla"
+        hidden
     >
 
         <div class="login-app">
@@ -1082,7 +1087,6 @@
                 </span>
 
             </header>
-
 
 
             <section class="login-presentacion">
@@ -1110,7 +1114,6 @@
             </section>
 
 
-
             <form id="form-login-encargado">
 
 
@@ -1131,6 +1134,7 @@
                         <input
                             type="text"
                             id="usuario-encargado"
+                            maxlength="64"
                             placeholder="Ingresa tu usuario"
                             autocomplete="username"
                             autocapitalize="none"
@@ -1141,7 +1145,6 @@
                     </div>
 
                 </div>
-
 
 
                 <div class="campo">
@@ -1161,6 +1164,7 @@
                         <input
                             type="password"
                             id="pin-encargado"
+                            maxlength="128"
                             placeholder="Ingresa tu PIN"
                             inputmode="numeric"
                             autocomplete="current-password"
@@ -1172,13 +1176,11 @@
                 </div>
 
 
-
                 <p
                     id="mensaje-login"
                     class="mensaje-login"
                     aria-live="polite"
                 ></p>
-
 
 
                 <button
@@ -1198,7 +1200,6 @@
             </form>
 
 
-
             <div class="login-seguridad">
 
                 <i data-lucide="shield-check"></i>
@@ -1214,7 +1215,6 @@
     </section>
 
 
-
     <!-- =====================================================
          CONTROL DE INGRESO
     ====================================================== -->
@@ -1222,6 +1222,7 @@
     <section
         id="pantalla-encargado"
         class="pantalla"
+        hidden
     >
 
         <div class="control-app">
@@ -1243,7 +1244,7 @@
 
 
                     <h1>
-                        Control de ingreso
+                        Ingresos y salidas
                     </h1>
 
 
@@ -1254,7 +1255,10 @@
                 </div>
 
             </header>
-
+            <div class="encargado-sesion">
+                <p>Sesión de <strong id="encargado-sesion-nombre">Encargado</strong></p>
+                <button id="btn-cerrar-sesion" class="btn-secundario" type="button">Cerrar sesión</button>
+            </div>
 
 
             <!-- ESCÁNER -->
@@ -1288,7 +1292,6 @@
                 </div>
 
 
-
                 <button
                     id="btn-escanear-qr"
                     class="control-escanear"
@@ -1304,12 +1307,10 @@
                 </button>
 
 
-
                 <div
                     id="lector-qr"
                     class="control-lector"
                 ></div>
-
 
 
                 <p
@@ -1319,7 +1320,6 @@
                 ></p>
 
             </section>
-
 
 
             <div class="control-separador">
@@ -1333,7 +1333,6 @@
                 <span></span>
 
             </div>
-
 
 
             <!-- BÚSQUEDA -->
@@ -1372,7 +1371,6 @@
             </div>
 
 
-
             <!-- RESULTADO -->
 
             <section
@@ -1402,7 +1400,6 @@
                 </div>
 
 
-
                 <div class="control-dato">
 
                     <span class="control-dato-icono">
@@ -1423,7 +1420,6 @@
                     </div>
 
                 </div>
-
 
 
                 <div class="control-dato">
@@ -1448,7 +1444,6 @@
                 </div>
 
 
-
                 <div class="control-dato">
 
                     <span class="control-dato-icono">
@@ -1469,7 +1464,6 @@
                     </div>
 
                 </div>
-
 
 
                 <div class="control-dato">
@@ -1494,7 +1488,6 @@
                 </div>
 
 
-
                 <button
                     id="btn-confirmar-ingreso"
                     class="control-confirmar"
@@ -1509,9 +1502,13 @@
                     </span>
 
                 </button>
+                <button id="btn-confirmar-salida" class="control-confirmar control-confirmar-salida" type="button" disabled>
+                    <i data-lucide="log-out" aria-hidden="true"></i><span>Confirmar salida</span>
+                </button>
+                <p class="control-aclaracion">Verifica la presencia del vehículo antes de confirmar ingreso y su retiro antes de confirmar salida.</p>
+
 
             </section>
-
 
 
             <!-- NAVEGACIÓN ENCARGADO -->
@@ -1543,7 +1540,6 @@
                 </button>
 
 
-
                 <button
                     id="btn-volver-inicio"
                     type="button"
@@ -1560,7 +1556,7 @@
                         </strong>
 
                         <small>
-                            Salir del control
+                            Volver sin cerrar sesión
                         </small>
 
                     </div>
@@ -1574,7 +1570,6 @@
     </section>
 
 
-
     <!-- =====================================================
          ITINERARIO
     ====================================================== -->
@@ -1582,6 +1577,7 @@
     <section
         id="pantalla-itinerario"
         class="pantalla"
+        hidden
     >
 
         <div class="itinerario-app">
@@ -1614,7 +1610,6 @@
             </header>
 
 
-
             <section class="itinerario-presentacion">
 
                 <span class="itinerario-presentacion-icono">
@@ -1637,14 +1632,18 @@
             </section>
 
 
-
+            <div id="itinerario-pestanas" class="itinerario-pestanas" role="tablist" aria-label="Días de la jornada"></div>
+            <div class="itinerario-herramientas">
+                <p id="itinerario-actualizacion" role="status" aria-live="polite">Consulta las actividades de sábado y domingo.</p>
+                <button id="btn-actualizar-itinerario" class="btn-secundario" type="button">Actualizar agenda</button>
+            </div>
             <section class="itinerario-resumen">
 
 
                 <div class="itinerario-fecha">
 
                     <strong id="itinerario-dia">
-                        14
+                        21
                     </strong>
 
                     <span id="itinerario-mes">
@@ -1652,7 +1651,6 @@
                     </span>
 
                 </div>
-
 
 
                 <div class="itinerario-resumen-texto">
@@ -1673,7 +1671,6 @@
                 </div>
 
 
-
                 <div class="itinerario-contador">
 
                     <strong id="itinerario-total">
@@ -1689,7 +1686,6 @@
             </section>
 
 
-
             <div class="itinerario-lista-titulo">
 
                 <span>
@@ -1701,9 +1697,10 @@
             </div>
 
 
-
             <div
                 id="lista-itinerario"
+                role="tabpanel"
+                tabindex="0"
                 class="lista-itinerario"
             >
 
@@ -1724,7 +1721,6 @@
     </section>
 
 
-
     <!-- =====================================================
          AYUDA
     ====================================================== -->
@@ -1732,6 +1728,7 @@
     <section
         id="pantalla-ayuda"
         class="pantalla"
+        hidden
     >
 
         <div class="ayuda-app">
@@ -1768,7 +1765,6 @@
             </header>
 
 
-
             <section class="ayuda-intro">
 
                 <span>
@@ -1789,7 +1785,6 @@
                 </div>
 
             </section>
-
 
 
             <div class="ayuda-pasos">
@@ -1813,14 +1808,12 @@
                         </h2>
 
                         <p>
-                            Ingresa tu nombre y el tipo de vehículo
-                            con el que llegarás.
+                            Ingresa tu nombre, celular de ocho dígitos, tipo de vehículo y día previsto de salida.
                         </p>
 
                     </div>
 
                 </article>
-
 
 
                 <article class="ayuda-paso ayuda-paso-verde">
@@ -1841,14 +1834,13 @@
                         </h2>
 
                         <p>
-                            El sistema te asignará automáticamente
-                            un parqueo disponible.
+                            El sistema asignará un parqueo según tu vehículo y los espacios disponibles.
+                            Durante la jornada tendrás dos horas para llegar. Si vence la reserva, podrás registrarte de nuevo con el mismo celular.
                         </p>
 
                     </div>
 
                 </article>
-
 
 
                 <article class="ayuda-paso ayuda-paso-amarillo">
@@ -1869,14 +1861,12 @@
                         </h2>
 
                         <p>
-                            Conserva tu QR o código JDJ para
-                            presentarlo cuando llegues.
+                            Conserva tu QR o código JDJ para presentarlo al llegar. Si lo pierdes, vuelve al inicio y elige Recuperar comprobante con tu celular.
                         </p>
 
                     </div>
 
                 </article>
-
 
 
                 <article class="ayuda-paso ayuda-paso-rojo">
@@ -1897,16 +1887,20 @@
                         </h2>
 
                         <p>
-                            Al llegar al parqueo, muestra tu código
-                            al encargado.
+                            Al llegar al parqueo, muestra tu QR o código. El encargado revisará el registro y confirmará tu ingreso.
                         </p>
 
                     </div>
 
                 </article>
 
+                            <article class="ayuda-paso ayuda-paso-azul">
+                    <span class="ayuda-paso-icono"><i data-lucide="log-out" aria-hidden="true"></i></span>
+                    <div><span class="ayuda-numero">PASO 5</span><h2>Avisa cuando te retires</h2>
+                    <p>Abre tu comprobante y elige Solicitar salida. Puedes recuperarlo con tu celular.
+                    El encargado confirmará la salida cuando el vehículo se retire; también puedes avisarle personalmente.</p></div>
+                </article>
             </div>
-
 
 
             <section class="ayuda-contacto">
@@ -1937,7 +1931,6 @@
                     Comunícate directamente con el equipo de
                     JDJ San Juan 2026.
                 </p>
-
 
 
                 <button
@@ -1978,7 +1971,6 @@
     </section>
 
 
-
     <!-- =====================================================
          DASHBOARD
     ====================================================== -->
@@ -1986,6 +1978,7 @@
     <section
         id="pantalla-dashboard"
         class="pantalla"
+        hidden
     >
 
         <div class="dashboard-app">
@@ -2022,7 +2015,6 @@
             </header>
 
 
-
             <!-- RESUMEN -->
 
             <div class="dashboard-resumen">
@@ -2050,7 +2042,6 @@
                 </article>
 
 
-
                 <article class="dashboard-tarjeta dashboard-tarjeta-amarillo">
 
                     <span class="dashboard-tarjeta-icono">
@@ -2071,7 +2062,6 @@
                     </div>
 
                 </article>
-
 
 
                 <article class="dashboard-tarjeta dashboard-tarjeta-verde">
@@ -2096,7 +2086,6 @@
                 </article>
 
 
-
                 <article class="dashboard-tarjeta dashboard-tarjeta-naranja">
 
                     <span class="dashboard-tarjeta-icono">
@@ -2119,7 +2108,6 @@
                 </article>
 
             </div>
-
 
 
             <!-- OCUPACIÓN -->
@@ -2158,7 +2146,6 @@
                 </div>
 
             </section>
-
 
 
             <!-- LISTADO -->
@@ -2200,7 +2187,8 @@
             </div>
 
 
-
+            <p id="dashboard-actualizacion" class="dashboard-actualizacion" role="status" aria-live="polite">Pendiente de actualización.</p>
+            <p id="dashboard-avisos" class="dashboard-avisos" role="status"></p>
             <div
                 id="lista-parqueos-dashboard"
                 class="lista-parqueos-dashboard"
@@ -2218,115 +2206,27 @@
 
             </div>
 
+                    <section class="dashboard-salidas" aria-labelledby="salidas-titulo">
+                <header><h2 id="salidas-titulo">Solicitudes de salida</h2>
+                    <p id="solicitudes-resumen" role="status" aria-live="polite">Pendiente de consulta.</p></header>
+                <p>Abre el registro para revisar el vehículo. Confirma la salida únicamente cuando se retire.</p>
+                <div id="lista-solicitudes-salida" class="lista-solicitudes-salida"></div>
+                <nav class="solicitudes-paginacion" aria-label="Páginas de solicitudes de salida">
+                    <button id="btn-solicitudes-anterior" class="btn-secundario" type="button" disabled>Anterior</button>
+                    <button id="btn-solicitudes-siguiente" class="btn-secundario" type="button" disabled>Siguiente</button>
+                </nav>
+            </section>
         </div>
 
     </section>
-
 
 
     <!-- =====================================================
          LIBRERÍAS
     ====================================================== -->
 
-    <script
-        src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
-    ></script>
-
-
-    <script
-        src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
-    ></script>
-
 
     <!-- ICONOS PROFESIONALES -->
-
-    <script
-        src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"
-    ></script>
-
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-
-            if (window.lucide) {
-                lucide.createIcons({
-                    attrs: {
-                        "stroke-width": 2,
-                        "aria-hidden": "true"
-                    }
-                });
-            }
-
-        });
-    </script>
-
-    <!-- =====================================================
-     MODAL - INGRESO CONFIRMADO
-     ===================================================== -->
-
-<div
-    id="modal-ingreso-confirmado"
-    class="modal-ingreso"
-    aria-hidden="true"
->
-    <div class="modal-ingreso-fondo"></div>
-
-    <div
-        class="modal-ingreso-tarjeta"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-ingreso-titulo"
-    >
-
-        <div class="modal-ingreso-icono">
-            <svg
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-            >
-                <path
-                    d="M20 6L9 17l-5-5"
-                ></path>
-            </svg>
-        </div>
-
-        <span class="modal-ingreso-etiqueta">
-            INGRESO CONFIRMADO
-        </span>
-
-        <h2 id="modal-ingreso-titulo">
-            ¡Bienvenido a JDJ San Juan 2026!
-        </h2>
-
-        <p class="modal-ingreso-mensaje">
-            Tu vehículo ha ingresado correctamente.
-        </p>
-
-        <div class="modal-ingreso-parqueo">
-            <span>PARQUEO</span>
-
-            <strong id="modal-ingreso-parqueo">
-                -
-            </strong>
-        </div>
-
-        <div class="modal-ingreso-codigo">
-            <span>Código de ingreso</span>
-
-            <strong id="modal-ingreso-codigo">
-                JDJ-
-            </strong>
-        </div>
-
-        <button
-            type="button"
-            id="btn-cerrar-ingreso"
-            class="modal-ingreso-boton"
-        >
-            ENTENDIDO
-        </button>
-
-    </div>
-</div>
 
 
 <!-- MODAL DE NOTIFICACIONES JDJ -->
@@ -2345,11 +2245,11 @@
         </div>
 
         <h2 id="notificacion-titulo">
-            ¡Ya tienes un registro!
+            Aviso del equipo
         </h2>
 
         <p id="notificacion-mensaje">
-            Este número de teléfono ya tiene un registro.
+            Información sobre tu parqueo.
         </p>
 
         <div class="notificacion-jdj-ayuda">
@@ -2365,15 +2265,28 @@
                 class="notificacion-jdj-boton">
             ENTENDIDO
         </button>
+        <button id="btn-cancelar-notificacion-jdj" class="notificacion-jdj-boton notificacion-jdj-cancelar" type="button" hidden>Cancelar</button>
+
 
     </div>
 </div>
 
 
-
     <!-- LÓGICA JDJ -->
 
-    <script src="js/app.js?v=37"></script>
+
+    <!-- Librerías versionadas; si falla QR/cámara, sigue disponible el código manual. -->
+    <script defer referrerpolicy="no-referrer" src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script defer referrerpolicy="no-referrer" src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script defer referrerpolicy="no-referrer" src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+    <script defer src="js/api.js?v=20261113-2"></script>
+    <script defer src="js/ui.js?v=20261113-2"></script>
+    <script defer src="js/registro.js?v=20261113-2"></script>
+    <script defer src="js/escaner.js?v=20261113-2"></script>
+    <script defer src="js/encargado.js?v=20261113-2"></script>
+    <script defer src="js/dashboard.js?v=20261113-2"></script>
+    <script defer src="js/itinerario.js?v=20261113-2"></script>
+    <script defer src="js/app.js?v=20261113-2"></script>
 
 </body>
 
