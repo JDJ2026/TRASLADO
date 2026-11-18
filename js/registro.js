@@ -1,12 +1,14 @@
 /**
- * JDJ San Juan 2026 — js/registro.js — Fase 3A (18/11/2026).
- * Fase 3A: aviso de ingreso más oportuno y consultas de foco controladas.
- * Ajuste puntual: menor espera para el aviso de ingreso, sin cambiar los flujos.
+ * JDJ San Juan 2026 — js/registro.js — Fase 3B (18/11/2026).
+ * Fase 3B: verificaciones breves al presentar o retomar el comprobante.
+ * Mantiene una frecuencia moderada fuera de esos periodos para evitar sobrecarga.
  * Requiere api.js, ui.js y el HTML actualizado que entregaremos después.
  * No inicia al cargar. app.js llamará a JDJ_REGISTRO.iniciar().
  *
  * Mantiene el código manual si la librería QR no está disponible.
- * Consulta automáticamente cada 7–9 s mientras espera ingreso, y 45–50 s después.
+ * ASIGNADO: verifica cada 3–4 s durante 30 s tras mostrar/retomar el
+ * comprobante; después cada 7–9 s. INGRESADO: cada 45–50 s.
+ * Es sondeo, no notificación push: la latencia también incluye la red y Apps Script.
  * Solo consulta con el comprobante visible y sin operaciones superpuestas.
  * Los estados terminales se verifican mediante recuperación fresca: un estado
  * público cacheado no debe declarar vencida una reserva recién ingresada.
@@ -24,6 +26,12 @@
   let consultando = false, forzarSiguiente = false, chequeoVencimiento = false;
   let erroresConsulta = 0, qrGenerado = null, ultimaVerificacion = null;
   let operacionFormulario = false, operacionSalida = false;
+  // Ventana temporal de sondeo rápido. Utiliza un reloj monotónico.
+  // El enfocado repetido no debe generar periodos rápidos indefinidos.
+  let sondeoRapidoHasta = 0;
+  let ultimoInicioRapido = -Infinity;
+  const RAPIDO_DURACION_MS = 30000;
+  const RAPIDO_ENFRIAMIENTO_MS = 35000;
   const ids = [
     'form-registro', 'nombre-piloto', 'telefono-piloto', 'tipo-vehiculo', 'fecha-salida',
     'btn-continuar-registro', 'form-recuperar', 'telefono-recuperar', 'btn-consultar-recuperar',
@@ -38,7 +46,22 @@
   const ahoraLocal = () => global.performance && typeof global.performance.now === 'function' ? global.performance.now() : Date.now();
   const ahoraServidor = () => relojServidor + (ahoraLocal() - relojLocal);
   const visible = () => comprobante && ui.pantallaActual() === 'asignacion' && !doc.hidden;
-  const demoraConsulta = () => comprobante && comprobante.estado === 'ASIGNADO' ? 7000 + Math.random() * 2000 : 45000 + Math.random() * 5000;
+  /** Próxima consulta: breve solo durante un periodo de atención al QR. */
+  function demoraConsulta() {
+    if (comprobante && comprobante.estado === 'ASIGNADO') {
+      const rapido = ahoraLocal() < sondeoRapidoHasta;
+      return rapido ? 3000 + Math.random() * 1000 : 7000 + Math.random() * 2000;
+    }
+    return 45000 + Math.random() * 5000;
+  }
+  /** Inicia una ventana corta de consultas rápidas, sin encadenar ventanas. */
+  function activarSondeoRapido() {
+    if (!comprobante || comprobante.estado !== 'ASIGNADO' || !visible()) return;
+    const ahora = ahoraLocal();
+    if (ahora - ultimoInicioRapido < RAPIDO_ENFRIAMIENTO_MS) return;
+    ultimoInicioRapido = ahora;
+    sondeoRapidoHasta = ahora + RAPIDO_DURACION_MS;
+  }
   const activo = () => visible() && ['ASIGNADO', 'INGRESADO'].includes(comprobante.estado);
   const vigente = () => comprobante && comprobante.estado === 'ASIGNADO' &&
     Number.isFinite(Date.parse(comprobante.venceEn)) && Date.parse(comprobante.venceEn) > ahoraServidor();
@@ -144,6 +167,8 @@
     observadoEn = Date.parse(datos.actualizadoEn) || 0;
     ultimaVerificacion = datos.servidorAhora;
     chequeoVencimiento = false; erroresConsulta = 0; forzarSiguiente = false;
+    // El cambio de comprobante permite una nueva ventana rápida.
+    sondeoRapidoHasta = 0; ultimoInicioRapido = -Infinity;
     ui.texto('codigo-ingreso', datos.codigo);
     ui.texto('codigo-parqueo', datos.codigoParqueo);
     ui.texto('nombre-parqueo', datos.nombreParqueo);
@@ -245,16 +270,18 @@
    * Esto evita que múltiples eventos focus/pageshow/online generen solicitudes
    * adelantadas o pospongan indefinidamente el sondeo habitual.
    *
-   * - ASIGNADO: refresco anticipado solo si pasaron al menos 6 s.
-   * - INGRESADO: refresco anticipado solo si pasaron al menos 30 s.
-   * - Reserva aparentemente vencida: comprobar enseguida con el servidor.
-   * Intervalos: ASIGNADO 7–9 s; INGRESADO 45–50 s.
+   * - Al presentar/retomar el QR, activa hasta 30 s de sondeo rápido.
+   * - ASIGNADO: admite una consulta adelantada si hace falta y no hay otra.
+   * - INGRESADO: refresco anticipado solo después de 30 s.
+   * - Una reserva posiblemente vencida se verifica de inmediato.
+   * No se abren consultas paralelas ni se permite un ciclo infinito de foco.
    */
   function reanudar(inmediato) {
     if (!visible()) { suspender(); return; }
     const verificadoEn = Date.parse(ultimaVerificacion);
     const edad = Number.isFinite(verificadoEn) ? ahoraServidor() - verificadoEn : Infinity;
-    const umbral = comprobante.estado === 'ASIGNADO' ? 6000 : 30000;
+    if (inmediato) activarSondeoRapido();
+    const umbral = comprobante.estado === 'ASIGNADO' ? 3000 : 30000;
     const refrescar = Boolean(inmediato) &&
       (edad >= umbral || (comprobante.estado === 'ASIGNADO' && !vigente()));
     if (activo()) {
