@@ -1,12 +1,12 @@
 /**
- * JDJ San Juan 2026 — js/registro.js — Fase 3 (18/11/2026).
- * Menos consultas adelantadas al cambiar de pestaña o enfocar el navegador.
- * El intervalo normal de actualización del piloto se conserva.
+ * JDJ San Juan 2026 — js/registro.js — Fase 3A (18/11/2026).
+ * Fase 3A: aviso de ingreso más oportuno y consultas de foco controladas.
+ * Ajuste puntual: menor espera para el aviso de ingreso, sin cambiar los flujos.
  * Requiere api.js, ui.js y el HTML actualizado que entregaremos después.
  * No inicia al cargar. app.js llamará a JDJ_REGISTRO.iniciar().
  *
  * Mantiene el código manual si la librería QR no está disponible.
- * Consulta automáticamente cada 12–15 s mientras espera ingreso, y 45–50 s después.
+ * Consulta automáticamente cada 7–9 s mientras espera ingreso, y 45–50 s después.
  * Solo consulta con el comprobante visible y sin operaciones superpuestas.
  * Los estados terminales se verifican mediante recuperación fresca: un estado
  * público cacheado no debe declarar vencida una reserva recién ingresada.
@@ -38,7 +38,7 @@
   const ahoraLocal = () => global.performance && typeof global.performance.now === 'function' ? global.performance.now() : Date.now();
   const ahoraServidor = () => relojServidor + (ahoraLocal() - relojLocal);
   const visible = () => comprobante && ui.pantallaActual() === 'asignacion' && !doc.hidden;
-  const demoraConsulta = () => comprobante && comprobante.estado === 'ASIGNADO' ? 12000 + Math.random() * 3000 : 45000 + Math.random() * 5000;
+  const demoraConsulta = () => comprobante && comprobante.estado === 'ASIGNADO' ? 7000 + Math.random() * 2000 : 45000 + Math.random() * 5000;
   const activo = () => visible() && ['ASIGNADO', 'INGRESADO'].includes(comprobante.estado);
   const vigente = () => comprobante && comprobante.estado === 'ASIGNADO' &&
     Number.isFinite(Date.parse(comprobante.venceEn)) && Date.parse(comprobante.venceEn) > ahoraServidor();
@@ -245,16 +245,16 @@
    * Esto evita que múltiples eventos focus/pageshow/online generen solicitudes
    * adelantadas o pospongan indefinidamente el sondeo habitual.
    *
-   * - ASIGNADO: refresco anticipado solo si pasaron al menos 10 s.
+   * - ASIGNADO: refresco anticipado solo si pasaron al menos 6 s.
    * - INGRESADO: refresco anticipado solo si pasaron al menos 30 s.
    * - Reserva aparentemente vencida: comprobar enseguida con el servidor.
-   * Los intervalos normales (12–15 y 45–50 s) NO cambian.
+   * Intervalos: ASIGNADO 7–9 s; INGRESADO 45–50 s.
    */
   function reanudar(inmediato) {
     if (!visible()) { suspender(); return; }
     const verificadoEn = Date.parse(ultimaVerificacion);
     const edad = Number.isFinite(verificadoEn) ? ahoraServidor() - verificadoEn : Infinity;
-    const umbral = comprobante.estado === 'ASIGNADO' ? 10000 : 30000;
+    const umbral = comprobante.estado === 'ASIGNADO' ? 6000 : 30000;
     const refrescar = Boolean(inmediato) &&
       (edad >= umbral || (comprobante.estado === 'ASIGNADO' && !vigente()));
     if (activo()) {
