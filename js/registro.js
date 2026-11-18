@@ -1,5 +1,7 @@
 /**
- * JDJ San Juan 2026 — guardar como js/registro.js.
+ * JDJ San Juan 2026 — js/registro.js — Fase 3 (18/11/2026).
+ * Menos consultas adelantadas al cambiar de pestaña o enfocar el navegador.
+ * El intervalo normal de actualización del piloto se conserva.
  * Requiere api.js, ui.js y el HTML actualizado que entregaremos después.
  * No inicia al cargar. app.js llamará a JDJ_REGISTRO.iniciar().
  *
@@ -238,14 +240,29 @@
     }
   }
 
+  /**
+   * Reactiva el comprobante sin reiniciar siempre la consulta ya programada.
+   * Esto evita que múltiples eventos focus/pageshow/online generen solicitudes
+   * adelantadas o pospongan indefinidamente el sondeo habitual.
+   *
+   * - ASIGNADO: refresco anticipado solo si pasaron al menos 10 s.
+   * - INGRESADO: refresco anticipado solo si pasaron al menos 30 s.
+   * - Reserva aparentemente vencida: comprobar enseguida con el servidor.
+   * Los intervalos normales (12–15 y 45–50 s) NO cambian.
+   */
   function reanudar(inmediato) {
-    suspender();
-    if (!visible()) return;
-    const edad = ahoraServidor() - Date.parse(ultimaVerificacion);
-    const refrescar = Boolean(inmediato) && (edad > 3000 || (comprobante.estado === 'ASIGNADO' && !vigente()));
-    if (activo()) programarConsulta(refrescar ? 0 : demoraConsulta(), false);
-    // El tick puede adelantar la consulta si acaba de terminar el plazo.
-    tick();
+    if (!visible()) { suspender(); return; }
+    const verificadoEn = Date.parse(ultimaVerificacion);
+    const edad = Number.isFinite(verificadoEn) ? ahoraServidor() - verificadoEn : Infinity;
+    const umbral = comprobante.estado === 'ASIGNADO' ? 10000 : 30000;
+    const refrescar = Boolean(inmediato) &&
+      (edad >= umbral || (comprobante.estado === 'ASIGNADO' && !vigente()));
+    if (activo()) {
+      if (refrescar && !consultando) programarConsulta(0, false);
+      else if (consultaTimer === null && !consultando) programarConsulta(demoraConsulta(), false);
+    }
+    // Solo un temporizador de cuenta regresiva activo por pantalla.
+    if (timer === null) tick();
   }
   function tick() {
     if (!visible()) return;
