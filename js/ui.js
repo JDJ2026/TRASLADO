@@ -290,9 +290,9 @@
     avisar: (titulo, mensaje, opciones) => encolarAviso(titulo, mensaje, false, null, opciones),
     confirmar: (titulo, mensaje, aceptar, opciones) => encolarAviso(titulo, mensaje, true, aceptar, opciones),
     mostrarError: error => {
-      const advertencias = ['TELEFONO_ACTIVO', 'SIN_CUPO', 'REGISTRO_CERRADO', 'FUERA_DE_FECHA', 'SOLICITUD_PENDIENTE', 'RESERVA_VENCIDA', 'DATOS_INVALIDOS', 'ESTADO_NO_PERMITIDO', 'LOGIN_LIMITADO', 'RECUPERACION_LIMITADA'];
+      const advertencias = ['TELEFONO_ACTIVO', 'SIN_CUPO', 'REGISTRO_CERRADO', 'FUERA_DE_FECHA', 'SOLICITUD_PENDIENTE', 'RESERVA_VENCIDA', 'DATOS_INVALIDOS', 'ESTADO_NO_PERMITIDO', 'LOGIN_LIMITADO', 'RECUPERACION_LIMITADA', 'SALIDA_NO_SOLICITADA', 'OPERACION_PENDIENTE', 'OCUPADO'];
       const esAviso = error && advertencias.includes(error.codigo);
-      const titulos = {TELEFONO_ACTIVO: 'Ya tienes un registro', SIN_CUPO: 'Sin espacios disponibles', RESERVA_VENCIDA: 'Reserva vencida', DATOS_INVALIDOS: 'Revisa los datos'};
+      const titulos = {TELEFONO_ACTIVO: 'Ya tienes un registro', SIN_CUPO: 'Sin espacios disponibles', RESERVA_VENCIDA: 'Reserva vencida', DATOS_INVALIDOS: 'Revisa los datos', OPERACION_PENDIENTE: 'Confirmación pendiente', OCUPADO: 'Sistema ocupado', SALIDA_NO_SOLICITADA: 'Falta la solicitud del piloto'};
       const titulo = esAviso ? titulos[error.codigo] || 'Revisa esta información' : 'No pudimos completar la operación';
       return encolarAviso(titulo, mensajeError(error), false, null, {tipo: esAviso ? 'advertencia' : 'error'});
     },

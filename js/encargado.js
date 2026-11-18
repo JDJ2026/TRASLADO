@@ -106,11 +106,15 @@
     ui.texto('encargado-estado', datos.salidaSolicitada && datos.estado === 'INGRESADO' ? 'Salida solicitada' : ui.estadoTexto(datos.estado));
     el('resultado-busqueda').hidden = false; el('resultado-busqueda').style.display = 'block';
     el('btn-confirmar-ingreso').disabled = datos.estado !== 'ASIGNADO';
-    el('btn-confirmar-salida').disabled = datos.estado !== 'INGRESADO';
+    const permiteSalida = datos.estado === 'INGRESADO' && datos.salidaSolicitada === true;
+    el('btn-confirmar-salida').hidden = !permiteSalida;
+    el('btn-confirmar-salida').style.display = permiteSalida ? '' : 'none';
+    el('btn-confirmar-salida').disabled = !permiteSalida;
   }
   async function confirmar(tipo) {
     if (!enPanel() || !seleccionado || confirmando || buscando) return;
     if (seleccionado.estado !== (tipo === 'ingreso' ? 'ASIGNADO' : 'INGRESADO')) return;
+    if (tipo === 'salida' && seleccionado.salidaSolicitada !== true) return;
     confirmando = true;
     const codigo = seleccionado.codigo, turno = revision;
     const texto = tipo === 'ingreso' ? 'Confirma únicamente si el vehículo llegó al parqueo ' + seleccionado.nombreParqueo + '.' :

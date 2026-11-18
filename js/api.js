@@ -7,7 +7,9 @@
 
   // Conserva esta URL si actualizas la implementación existente de Apps Script.
   const URL_API = 'https://script.google.com/macros/s/AKfycbxjC8nPNznRr0WmeSye3vdOnE-SPUju2KAwb8o673ujyED7TPCDQ2pbSpEJyrYhF4KYbQ/exec';
-  const TIEMPO_ESPERA_MS = 25000;
+  const TIEMPO_LECTURA_MS = 30000;
+  const TIEMPO_ESCRITURA_MS = 60000;
+  const lecturasEnCurso = new Map();
   const PREFIJO = 'jdj:v2:' + URL_API.split('/').slice(-2, -1)[0] + ':';
   const memoria = Object.create(null);
   let conexionPendiente = null;
@@ -134,7 +136,7 @@
           throw new JDJError('NAVEGADOR_NO_COMPATIBLE', 'Usa un navegador actualizado para abrir la página.');
         }
         controlador = new global.AbortController();
-        temporizador = global.setTimeout(() => controlador.abort(), TIEMPO_ESPERA_MS);
+        temporizador = global.setTimeout(() => controlador.abort(), o.escritura ? TIEMPO_ESCRITURA_MS : TIEMPO_LECTURA_MS);
         const config = {method: o.get ? 'GET' : 'POST', signal: controlador.signal,
           redirect: 'follow', credentials: 'omit', cache: 'no-store'};
         let url = URL_API;
@@ -179,13 +181,13 @@
         const error = original instanceof JDJError ? original : new JDJError(
           original && original.name === 'AbortError' ? 'TIEMPO_AGOTADO' : 'ERROR_RED',
           original && original.name === 'AbortError'
-            ? 'El servidor está tardando. La operación podría haberse guardado; evita crear otra reserva.'
+            ? (o.escritura ? 'La respuesta no llegó a tiempo. Estamos verificando si el cambio se guardó.' : 'La consulta está tardando. Revisa tu conexión e intenta nuevamente.')
             : 'No pudimos conectar. Revisa tu conexión e intenta nuevamente.',
           {reintentable: true, resultadoDesconocido: Boolean(o.escritura && envioIntentado)}
         );
         // Desarmar el timeout ANTES de esperar el reintento.
         if (temporizador !== undefined) global.clearTimeout(temporizador);
-        if (error.reintentable && intento + 1 < maximo) {
+        if (error.reintentable && intento + 1 < maximo && (!o.escritura || !error.resultadoDesconocido)) {
           await esperar((error.reintentarEnMs || 800) + Math.floor(Math.random() * 300));
           continue;
         }
@@ -206,17 +208,37 @@
     return conexionPendiente;
   }
   async function publico(accion, datos, get, escritura) {
-    await comprobarVersion();
-    return transportar(accion, datos, {get: Boolean(get), reintentar: true, escritura: Boolean(escritura)});
+    // El sondeo de estado ya tiene su propio intervalo/backoff: no duplicarlo aquí.
+    const opciones = {get: Boolean(get), reintentar: !escritura && accion !== 'estado', escritura: Boolean(escritura)};
+    if (escritura) return transportar(accion, datos, opciones);
+    const clave = accion + ':' + JSON.stringify(datos || {});
+    if (lecturasEnCurso.has(clave)) return lecturasEnCurso.get(clave);
+    const pendiente = transportar(accion, datos, opciones).finally(() => lecturasEnCurso.delete(clave));
+    lecturasEnCurso.set(clave, pendiente);
+    return pendiente;
   }
   async function protegido(accion, datos, escritura) {
     const actual = sesionVigente();
     if (!actual) throw new JDJError('SESION_INVALIDA', 'Inicia sesión como encargado.');
     const token = actual.token;
-    await comprobarVersion();
-    return transportar(accion, Object.assign({}, datos, {token: token}), {
-      escritura: Boolean(escritura), reintentar: true, tokenUsado: token
-    });
+    try {
+      return await transportar(accion, Object.assign({}, datos, {token: token}), {
+        escritura: Boolean(escritura), reintentar: true, tokenUsado: token
+      });
+    } catch (error) {
+      if (!escritura || !error.resultadoDesconocido) throw error;
+      // No volver a escribir a ciegas: buscar el mismo código y comprobar el resultado.
+      try {
+        const verificado = await transportar('buscar', {codigo: datos.codigo, token: token}, {tokenUsado: token});
+        const esperado = accion === 'confirmar' ? 'INGRESADO' : 'RETIRADO';
+        if (verificado.encontrado && verificado.codigo === datos.codigo && verificado.estado === esperado) {
+          return Object.assign({}, verificado, {respuestaRecuperada: true});
+        }
+      } catch (_) { /* no inferir que una escritura falló si no se puede verificar */ }
+      throw new JDJError('OPERACION_PENDIENTE',
+        'No recibimos la confirmación del servidor. El cambio podría estar guardado. Busca de nuevo este código antes de repetir la acción.',
+        {resultadoDesconocido: true});
+    }
   }
 
   async function iniciarSesion(usuario, pin) {
@@ -225,7 +247,6 @@
     loginEnCurso = true;
     const generacion = ++generacionSesion;
     try {
-      await comprobarVersion();
       // No reintentar login automáticamente: evitar consumir intentos por errores de credenciales.
       const resultado = await transportar('login', datos, {});
       if (generacion !== generacionSesion) throw new JDJError('ACCESO_CANCELADO', 'El acceso fue cancelado.');
@@ -247,7 +268,6 @@
     limpiarSesion();
     if (!anterior) return {exito: true, servidorConfirmado: true};
     try {
-      await comprobarVersion();
       await transportar('logout', {token: anterior.token}, {});
       return {exito: true, servidorConfirmado: true};
     } catch (_) {
@@ -257,7 +277,6 @@
   }
 
   async function registrarInterno(datos, clave) {
-    await comprobarVersion();
     let solicitud = leer('solicitud');
     const idValido = solicitud && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(solicitud.id || '');
     if (idValido && solicitud.clave !== clave && solicitud.estado === 'pendiente') {
@@ -269,11 +288,33 @@
       const resultado = await transportar('registrar', Object.assign({}, datos, {solicitudId: solicitud.id}),
         {escritura: true, reintentar: true});
       solicitud.estado = 'confirmada';
+      solicitud.incierta = false;
       guardar('solicitud', solicitud);
       return resultado;
     } catch (error) {
-      if (!error.resultadoDesconocido) solicitud.estado = 'rechazada';
-      guardar('solicitud', solicitud);
+      if (error.resultadoDesconocido || solicitud.incierta) {
+        solicitud.incierta = true;
+        try {
+          const verificado = await transportar('verificarReserva', {solicitudId: solicitud.id, telefono: datos.telefono}, {});
+          if (verificado.encontrado && verificado.codigo) {
+            solicitud.estado = 'confirmada'; solicitud.incierta = false; guardar('solicitud', solicitud);
+            return Object.assign({}, verificado, {respuestaRecuperada: true});
+          }
+        } catch (_) { /* conservar la solicitud para un reintento con el MISMO ID */ }
+        guardar('solicitud', solicitud);
+        throw new JDJError('OPERACION_PENDIENTE',
+          'No hemos podido confirmar la respuesta. Tu solicitud se conserva y podría haberse guardado. Recupera el comprobante con este mismo celular; no uses otro número.',
+          {resultadoDesconocido: true});
+      }
+      solicitud.estado = 'rechazada'; guardar('solicitud', solicitud);
+      if (error.codigo === 'TELEFONO_ACTIVO') {
+        try {
+          const existente = await recuperar(datos.telefono);
+          if (['ASIGNADO', 'INGRESADO'].includes(existente.estado)) {
+            return Object.assign({}, existente, {registroExistente: true});
+          }
+        } catch (_) { /* mostrar el rechazo original si no se puede recuperar */ }
+      }
       throw error;
     }
   }
@@ -332,7 +373,18 @@
     itinerario: () => publico('itinerario', {}, true),
     buscar: valor => protegido('buscar', {codigo: codigo(valor)}, false),
     confirmarIngreso: valor => protegido('confirmar', {codigo: codigo(valor)}, true),
-    solicitarSalida: (valor, numero) => publico('solicitarSalida', {codigo: codigo(valor), telefono: telefono(numero)}, false, true),
+    solicitarSalida: async (valor, numero) => {
+      const c = codigo(valor), t = telefono(numero);
+      try { return await publico('solicitarSalida', {codigo: c, telefono: t}, false, true); }
+      catch (error) {
+        if (!error.resultadoDesconocido) throw error;
+        try {
+          const verificado = await recuperar(t);
+          if (verificado.codigo === c && (verificado.salidaSolicitada || verificado.estado === 'RETIRADO')) return verificado;
+        } catch (_) { /* resultado incierto */ }
+        throw new JDJError('OPERACION_PENDIENTE', 'La solicitud podría haberse guardado. Actualiza el comprobante antes de enviarla otra vez.', {resultadoDesconocido: true});
+      }
+    },
     confirmarSalida: valor => protegido('confirmarSalida', {codigo: codigo(valor)}, true),
     dashboard: () => protegido('dashboard', {}, false),
     solicitudesSalida: desde => {

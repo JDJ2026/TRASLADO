@@ -4,7 +4,8 @@
  * No inicia al cargar. app.js llamará a JDJ_REGISTRO.iniciar().
  *
  * Mantiene el código manual si la librería QR no está disponible.
- * Consulta automáticamente cada 30–35 segundos solo con el comprobante visible.
+ * Consulta automáticamente cada 12–15 s mientras espera ingreso, y 45–50 s después.
+ * Solo consulta con el comprobante visible y sin operaciones superpuestas.
  * Los estados terminales se verifican mediante recuperación fresca: un estado
  * público cacheado no debe declarar vencida una reserva recién ingresada.
  */
@@ -17,7 +18,7 @@
   let observadoEn = 0;
   const estadosNotificados = new Set();
   let relojServidor = 0, relojLocal = 0;
-  let generacion = 0, timer = null, consultaTimer = null;
+  let timer = null, consultaTimer = null;
   let consultando = false, forzarSiguiente = false, chequeoVencimiento = false;
   let erroresConsulta = 0, qrGenerado = null, ultimaVerificacion = null;
   let operacionFormulario = false, operacionSalida = false;
@@ -35,6 +36,7 @@
   const ahoraLocal = () => global.performance && typeof global.performance.now === 'function' ? global.performance.now() : Date.now();
   const ahoraServidor = () => relojServidor + (ahoraLocal() - relojLocal);
   const visible = () => comprobante && ui.pantallaActual() === 'asignacion' && !doc.hidden;
+  const demoraConsulta = () => comprobante && comprobante.estado === 'ASIGNADO' ? 12000 + Math.random() * 3000 : 45000 + Math.random() * 5000;
   const activo = () => visible() && ['ASIGNADO', 'INGRESADO'].includes(comprobante.estado);
   const vigente = () => comprobante && comprobante.estado === 'ASIGNADO' &&
     Number.isFinite(Date.parse(comprobante.venceEn)) && Date.parse(comprobante.venceEn) > ahoraServidor();
@@ -45,7 +47,6 @@
     relojServidor = fecha; relojLocal = ahoraLocal();
   }
   function suspender() {
-    generacion++;
     if (timer !== null) global.clearTimeout(timer);
     if (consultaTimer !== null) global.clearTimeout(consultaTimer);
     timer = null; consultaTimer = null;
@@ -71,6 +72,8 @@
     });
     global.addEventListener('pagehide', suspender);
     global.addEventListener('pageshow', () => reanudar(true));
+    global.addEventListener('focus', () => { if (visible()) reanudar(true); });
+    global.addEventListener('online', () => { if (visible()) reanudar(true); });
     el('temporizador-tiempo').setAttribute('aria-live', 'off');
     iniciado = true;
   }
@@ -96,7 +99,7 @@
           nombre: el('nombre-piloto').value, telefono: numero,
           tipo: el('tipo-vehiculo').value, fechaSalida: el('fecha-salida').value
         }));
-      presentar(datos, false, true);
+      presentar(datos, Boolean(datos.registroExistente || datos.respuestaRecuperada), true);
       el('form-registro').reset();
     } catch (error) {
       if (error.codigo === 'TELEFONO_ACTIVO' || error.resultadoDesconocido) abrirRecuperar(numero);
@@ -135,7 +138,8 @@
     suspender();
     comprobante = Object.assign({}, datos);
     qrGenerado = null;
-    observadoEn = Date.parse(datos.servidorAhora);
+    // Versionar con la modificación de la fila, no con la hora final del HTTP.
+    observadoEn = Date.parse(datos.actualizadoEn) || 0;
     ultimaVerificacion = datos.servidorAhora;
     chequeoVencimiento = false; erroresConsulta = 0; forzarSiguiente = false;
     ui.texto('codigo-ingreso', datos.codigo);
@@ -238,8 +242,8 @@
     suspender();
     if (!visible()) return;
     const edad = ahoraServidor() - Date.parse(ultimaVerificacion);
-    const refrescar = Boolean(inmediato) && (edad > 10000 || (comprobante.estado === 'ASIGNADO' && !vigente()));
-    if (activo()) programarConsulta(refrescar ? 0 : 30000 + Math.random() * 5000, refrescar);
+    const refrescar = Boolean(inmediato) && (edad > 3000 || (comprobante.estado === 'ASIGNADO' && !vigente()));
+    if (activo()) programarConsulta(refrescar ? 0 : demoraConsulta(), false);
     // El tick puede adelantar la consulta si acaba de terminar el plazo.
     tick();
   }
@@ -258,10 +262,14 @@
     if (!datos || datos.codigo !== comprobante.codigo || !ESTADOS.includes(datos.estado)) {
       throw new api.Error('RESPUESTA_INVALIDA', 'No pudimos verificar este comprobante.');
     }
-    const marca = Date.parse(datos.actualizadoEn || datos.servidorAhora);
+    const marca = Date.parse(datos.actualizadoEn);
     sincronizarReloj(datos);
     const permitidos = {ASIGNADO: ESTADOS, INGRESADO: ['INGRESADO', 'RETIRADO'], VENCIDO: ['VENCIDO'], RETIRADO: ['RETIRADO']};
-    if ((Number.isFinite(marca) && marca < observadoEn) || !permitidos[comprobante.estado].includes(datos.estado)) return;
+    if (!permitidos[comprobante.estado].includes(datos.estado)) return;
+    // Un cambio monotónico (ASIGNADO->INGRESADO->RETIRADO) no se pierde
+    // por comparar el reloj del servidor con un snapshot anterior.
+    if (datos.estado === comprobante.estado && Number.isFinite(marca) && marca < observadoEn) return;
+    if (datos.estado === 'INGRESADO' && comprobante.salidaSolicitada) datos = Object.assign({}, datos, {salidaSolicitada: true});
     comprobante = Object.assign({}, comprobante, datos);
     observadoEn = Number.isFinite(marca) ? marca : observadoEn;
     ultimaVerificacion = datos.servidorAhora;
@@ -269,46 +277,47 @@
     notificarEstado();
   }
   async function consultar() {
-    if (!activo() || consultando) return;
+    if (!activo()) return;
+    if (consultando || operacionSalida) { programarConsulta(1000, false); return; }
     consultando = true;
-    const codigo = comprobante.codigo, numero = comprobante.telefono, turno = generacion;
+    const codigo = comprobante.codigo, numero = comprobante.telefono;
     let fresca = forzarSiguiente || (comprobante.estado === 'ASIGNADO' && !vigente());
     forzarSiguiente = false;
     try {
       let datos = fresca ? await api.recuperar(numero) : await api.estado(codigo);
-      if (turno !== generacion || !visible() || comprobante.codigo !== codigo) return;
+      if (!comprobante || comprobante.codigo !== codigo || !visible()) return;
       if (!datos.encontrado && !datos.estado) throw new api.Error('REGISTRO_NO_ENCONTRADO', 'No se pudo localizar el comprobante.');
       // La API pública puede conservar un estado anterior hasta diez segundos.
       // Antes de concluir vencimiento/salida, comprobar el registro actual por celular.
       if (!fresca && ['VENCIDO', 'RETIRADO'].includes(datos.estado)) {
         datos = await api.recuperar(numero); fresca = true;
-        if (turno !== generacion || !visible() || comprobante.codigo !== codigo) return;
+        if (!comprobante || comprobante.codigo !== codigo || !visible()) return;
       }
       if (fresca && datos.codigo !== codigo) presentar(datos, true, false);
       else aplicarEstado(datos);
       erroresConsulta = 0;
     } catch (_) {
-      if (turno === generacion && visible() && comprobante.codigo === codigo) {
+      if (visible() && comprobante.codigo === codigo) {
         erroresConsulta++;
         mostrarHoraActualizacion('No pudimos verificar el estado. Conserva tu código y vuelve a intentar.');
       }
     } finally {
       consultando = false;
-      if (activo()) programarConsulta(forzarSiguiente ? 0 : erroresConsulta ? Math.min(120000, 30000 * Math.pow(2, erroresConsulta)) : 30000 + Math.random() * 5000, false);
+      if (activo()) programarConsulta(forzarSiguiente ? 0 : erroresConsulta ? Math.min(60000, 12000 * Math.pow(2, erroresConsulta)) : demoraConsulta(), false);
     }
   }
 
   async function actualizarManual() {
     if (!comprobante || consultando) return;
     consultando = true;
-    const codigo = comprobante.codigo, turno = generacion;
+    const codigo = comprobante.codigo;
     try {
       const datos = await ui.conCarga({boton: 'btn-actualizar-comprobante', titulo: 'Verificando comprobante'},
         () => api.recuperar(comprobante.telefono));
-      if (turno !== generacion || !visible() || comprobante.codigo !== codigo) return;
+      if (!comprobante || comprobante.codigo !== codigo || !visible()) return;
       presentar(datos, true, false);
     } catch (error) { ui.mostrarError(error); }
-    finally { consultando = false; if (activo()) programarConsulta(30000, false); }
+    finally { consultando = false; if (activo()) programarConsulta(demoraConsulta(), false); }
   }
   async function solicitarSalida() {
     if (!comprobante || comprobante.estado !== 'INGRESADO' || comprobante.salidaSolicitada || operacionSalida) return;
