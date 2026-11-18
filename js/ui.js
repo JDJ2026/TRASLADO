@@ -1,8 +1,10 @@
 /**
- * JDJ San Juan 2026 — registro.
- * 
+ * JDJ San Juan 2026 — guardar como js/ui.js.
+ * Utilidades de interfaz; no hace peticiones ni inicia la página al cargar.
+ * Reutiliza las pantallas y clases de tu HTML actual.
+ * El nuevo app.js llamará a JDJ_UI.iniciar() cuando el HTML esté listo.
+ * No conectar todavía con el HTML antiguo ni reemplazar app.js en este paso.
  */
-
 (function (global) {
   'use strict';
   const doc = global.document;
@@ -200,6 +202,11 @@
     const modal = elemento('modal-notificacion-jdj');
     const aceptar = elemento('btn-cerrar-notificacion-jdj');
     const cancelar = elemento('btn-cancelar-notificacion-jdj');
+    modal.setAttribute('data-tipo', avisoActual.tipo);
+    const icono = modal.querySelector('.notificacion-jdj-icono');
+    if (icono) { icono.textContent = {exito: '✓', error: '!', advertencia: '!', informacion: 'i'}[avisoActual.tipo]; icono.setAttribute('aria-hidden', 'true'); }
+    const ayuda = modal.querySelector('.notificacion-jdj-ayuda');
+    if (ayuda) { ayuda.hidden = avisoActual.tipo !== 'error'; ayuda.style.display = ayuda.hidden ? 'none' : ''; }
     texto('notificacion-titulo', avisoActual.titulo);
     texto('notificacion-mensaje', avisoActual.mensaje);
     texto(aceptar, avisoActual.aceptar);
@@ -211,10 +218,11 @@
     // En una confirmación el foco inicial está en Cancelar.
     enfocar(avisoActual.confirmacion ? cancelar : aceptar);
   }
-  function encolarAviso(titulo, mensaje, confirmacion, aceptar) {
+  function encolarAviso(titulo, mensaje, confirmacion, aceptar, opciones) {
     iniciar();
     if (!avisoActual && !avisos.length) focoAntesDeAvisos = doc.activeElement;
-    const promesa = new Promise(resolve => avisos.push({titulo: String(titulo), mensaje: String(mensaje),
+    const tipo = opciones && ['exito', 'error', 'advertencia', 'informacion'].includes(opciones.tipo) ? opciones.tipo : 'informacion';
+    const promesa = new Promise(resolve => avisos.push({tipo: tipo, titulo: String(titulo), mensaje: String(mensaje),
       confirmacion: confirmacion, aceptar: aceptar || (confirmacion ? 'Confirmar' : 'Entendido'), resolver: resolve}));
     abrirSiguienteAviso();
     return promesa;
@@ -279,9 +287,15 @@
     iniciar: iniciar, elemento: elemento, texto: texto, limpiar: limpiar,
     mostrar: mostrar, pantallaActual: () => pantallaActual,
     cargar: cargar, conCarga: conCarga, cambiarTextoBoton: cambiarTextoBoton,
-    avisar: (titulo, mensaje) => encolarAviso(titulo, mensaje, false),
-    confirmar: (titulo, mensaje, aceptar) => encolarAviso(titulo, mensaje, true, aceptar),
-    mostrarError: error => encolarAviso('No pudimos completar la operación', mensajeError(error), false),
+    avisar: (titulo, mensaje, opciones) => encolarAviso(titulo, mensaje, false, null, opciones),
+    confirmar: (titulo, mensaje, aceptar, opciones) => encolarAviso(titulo, mensaje, true, aceptar, opciones),
+    mostrarError: error => {
+      const advertencias = ['TELEFONO_ACTIVO', 'SIN_CUPO', 'REGISTRO_CERRADO', 'FUERA_DE_FECHA', 'SOLICITUD_PENDIENTE', 'RESERVA_VENCIDA', 'DATOS_INVALIDOS', 'ESTADO_NO_PERMITIDO', 'LOGIN_LIMITADO', 'RECUPERACION_LIMITADA'];
+      const esAviso = error && advertencias.includes(error.codigo);
+      const titulos = {TELEFONO_ACTIVO: 'Ya tienes un registro', SIN_CUPO: 'Sin espacios disponibles', RESERVA_VENCIDA: 'Reserva vencida', DATOS_INVALIDOS: 'Revisa los datos'};
+      const titulo = esAviso ? titulos[error.codigo] || 'Revisa esta información' : 'No pudimos completar la operación';
+      return encolarAviso(titulo, mensajeError(error), false, null, {tipo: esAviso ? 'advertencia' : 'error'});
+    },
     cancelarAvisos: cancelarAvisos, tipoVehiculo: tipoVehiculo,
     estadoTexto: estadoTexto, mensajeError: mensajeError, actualizarIconos: actualizarIconos
   });

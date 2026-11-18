@@ -1,6 +1,9 @@
 /**
- * JDJ San Juan 2026 — itinerario.
- * 
+ * Guardar como js/itinerario.js. Requiere api.js, ui.js y el HTML nuevo.
+ * Las actividades vienen de Sheets: no se incluyen actividades inventadas.
+ * Sábado y domingo tienen pestañas propias. Si Sheets incluye otras fechas,
+ * se muestran como pestañas adicionales para no ocultar información.
+ * No inicia al cargar; no consulta en segundo plano ni cada pocos segundos.
  */
 (function (global) {
   'use strict';
@@ -49,6 +52,12 @@
     const lista = el('lista-itinerario'); lista.setAttribute('role', 'tabpanel');
     el('itinerario-pestanas').setAttribute('role', 'tablist');
     el('itinerario-pestanas').setAttribute('aria-label', 'Días de la jornada');
+    try {
+      const cache = JSON.parse(global.sessionStorage.getItem('jdj:agenda-publica:v2') || 'null');
+      if (cache && Date.now() >= cache.guardado && Date.now() - cache.guardado < 60000) {
+        actividades = normalizar(cache.datos); ultimaCarga = cache.guardado; actualizadoEn = cache.datos.actualizadoEn;
+      }
+    } catch (_) { /* Continuar sin caché local. */ }
     iniciado = true;
   }
   function abrir() {
@@ -116,6 +125,9 @@
   async function actualizar(manual) {
     if (cargando || !visible()) return;
     cargando = true; el('btn-actualizar-itinerario').disabled = true;
+    el('btn-actualizar-itinerario').setAttribute('aria-busy', 'true');
+    el('lista-itinerario').setAttribute('aria-busy', 'true');
+    const finCarga = actividades === null ? ui.cargar('Cargando itinerario', 'Estamos consultando la agenda de la jornada.') : null;
     ui.texto('itinerario-actualizacion', 'Consultando la agenda…');
     try {
       const datos = await api.itinerario();
@@ -128,6 +140,7 @@
         if (OFICIALES.includes(hoy)) seleccionada = hoy;
       }
       actividades = nuevas; ultimaCarga = Date.now(); actualizadoEn = datos.actualizadoEn;
+      try { global.sessionStorage.setItem('jdj:agenda-publica:v2', JSON.stringify({guardado: ultimaCarga, datos: datos})); } catch (_) { /* memoria */ }
       if (!visible()) return;
       pintar();
       mostrarActualizacion();
@@ -136,7 +149,11 @@
       ui.texto('itinerario-actualizacion', actividades === null ? 'No se pudo cargar la agenda. Pulsa Actualizar para reintentar.' :
         'No se pudo actualizar. Se conserva la última agenda consultada.');
       if (manual) ui.mostrarError(error);
-    } finally { cargando = false; el('btn-actualizar-itinerario').disabled = false; }
+    } finally {
+      cargando = false; el('btn-actualizar-itinerario').disabled = false;
+      el('btn-actualizar-itinerario').removeAttribute('aria-busy'); el('lista-itinerario').removeAttribute('aria-busy');
+      if (finCarga) finCarga();
+    }
   }
   global.JDJ_ITINERARIO = Object.freeze({iniciar: iniciar, abrir: abrir});
 })(globalThis);

@@ -3814,3 +3814,17 @@ button:disabled { cursor: not-allowed; opacity: .52; }
     html { scroll-behavior: auto; }
     *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Avisos semánticos: color e icono acompañan al mensaje. */
+.modal-notificacion-jdj { --aviso: #176b9c; --aviso-suave: #eaf5fc; }
+.modal-notificacion-jdj[data-tipo="exito"] { --aviso: #23783f; --aviso-suave: #edf8ef; }
+.modal-notificacion-jdj[data-tipo="error"] { --aviso: #ad342e; --aviso-suave: #fff0ed; }
+.modal-notificacion-jdj[data-tipo="advertencia"] { --aviso: #885f09; --aviso-suave: #fff7df; }
+.modal-notificacion-jdj .notificacion-jdj-icono { display: grid; place-items: center; background: var(--aviso-suave); color: var(--aviso); font-size: 29px; font-weight: 850; }
+.modal-notificacion-jdj .notificacion-jdj-boton:not(.notificacion-jdj-cancelar) { background: var(--aviso); color: #fff; }
+.modal-notificacion-jdj .notificacion-jdj-cancelar { background: #edf3f7; color: #31516a; }
+#pantalla-inicio .bienvenida h1[tabindex="-1"]:focus { outline: none; }
+#btn-actualizar-itinerario[aria-busy="true"]::before,
+#btn-actualizar-dashboard[aria-busy="true"]::before { content: ''; flex-shrink: 0; width: 15px; height: 15px; border: 2px solid #cbdde9; border-top-color: #176b9c; border-radius: 50%; animation: girar .8s linear infinite; }
+.carga-seccion { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 100px; padding: 20px; color: #526b7d; font-size: 13px; line-height: 1.7; }
+@media (prefers-reduced-motion: reduce) { .carga-seccion .mini-loader { animation: none; } }

@@ -1,6 +1,12 @@
 /**
- * JDJ San Juan 2026 — registro.
- * 
+ * JDJ San Juan 2026 — guardar como js/registro.js.
+ * Requiere api.js, ui.js y el HTML actualizado que entregaremos después.
+ * No inicia al cargar. app.js llamará a JDJ_REGISTRO.iniciar().
+ *
+ * Mantiene el código manual si la librería QR no está disponible.
+ * Consulta automáticamente cada 30–35 segundos solo con el comprobante visible.
+ * Los estados terminales se verifican mediante recuperación fresca: un estado
+ * público cacheado no debe declarar vencida una reserva recién ingresada.
  */
 (function (global) {
   'use strict';
@@ -9,6 +15,7 @@
   let api, ui, iniciado = false;
   let comprobante = null;
   let observadoEn = 0;
+  const estadosNotificados = new Set();
   let relojServidor = 0, relojLocal = 0;
   let generacion = 0, timer = null, consultaTimer = null;
   let consultando = false, forzarSiguiente = false, chequeoVencimiento = false;
@@ -108,6 +115,15 @@
     finally { operacionFormulario = false; }
   }
 
+  function notificarEstado() {
+    if (!visible() || !comprobante || !['INGRESADO', 'RETIRADO'].includes(comprobante.estado)) return;
+    const clave = comprobante.codigo + ':' + comprobante.estado;
+    if (estadosNotificados.has(clave)) return;
+    estadosNotificados.add(clave);
+    if (comprobante.estado === 'INGRESADO') ui.avisar('¡Tu vehículo ya ingresó!',
+      'El encargado confirmó el ingreso en ' + comprobante.nombreParqueo + '. Tu espacio está ocupado. Cuando te retires, solicita la salida desde este comprobante.', {tipo: 'exito'});
+    else ui.avisar('Salida confirmada', 'El encargado confirmó la salida de tu vehículo. Gracias por participar en JDJ San Juan 2026.', {tipo: 'exito'});
+  }
   function presentar(datos, recuperado, navegar) {
     if (!datos || !/^JDJ-[A-Z0-9]{6}$/.test(datos.codigo || '') || !ESTADOS.includes(datos.estado) ||
         !/^\d{8}$/.test(datos.telefono || '') || typeof datos.nombre !== 'string' ||
@@ -132,6 +148,7 @@
     ui.texto('asignacion-eyebrow', recuperado ? 'TU COMPROBANTE JDJ' : 'REGISTRO COMPLETADO');
     renderizarEstado();
     if (navegar) ui.mostrar('asignacion'); else reanudar(false);
+    notificarEstado();
   }
   function renderizarEstado() {
     if (!comprobante) return;
@@ -249,6 +266,7 @@
     observadoEn = Number.isFinite(marca) ? marca : observadoEn;
     ultimaVerificacion = datos.servidorAhora;
     renderizarEstado();
+    notificarEstado();
   }
   async function consultar() {
     if (!activo() || consultando) return;
@@ -301,7 +319,10 @@
       if (!aceptado || !visible() || comprobante.codigo !== codigo || comprobante.estado !== 'INGRESADO') return;
       const datos = await ui.conCarga({boton: 'btn-solicitar-salida', titulo: 'Enviando solicitud de salida'},
         () => api.solicitarSalida(codigo, numero));
-      if (comprobante.codigo === codigo) aplicarEstado(datos);
+      if (comprobante.codigo === codigo) {
+        aplicarEstado(datos);
+        if (datos.estado === 'INGRESADO') ui.avisar('Solicitud de salida enviada', 'El encargado recibió tu solicitud. El cupo se liberará cuando confirme el retiro del vehículo.', {tipo: 'exito'});
+      }
     } catch (error) { ui.mostrarError(error); }
     finally { operacionSalida = false; }
   }

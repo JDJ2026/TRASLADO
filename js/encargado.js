@@ -1,6 +1,8 @@
 /**
- * JDJ San Juan 2026 — encargado.
- * 
+ * Guardar como js/encargado.js. Requiere api.js, ui.js y escaner.js.
+ * app.js lo iniciará con el nuevo HTML. No inicia automáticamente.
+ * No guarda PIN ni autoriza operaciones por el estado de la pantalla:
+ * la API vuelve a verificar la sesión y el registro en el servidor.
  */
 (function (global) {
   'use strict';
@@ -77,7 +79,7 @@
     if (!enPanel() || buscando || confirmando) return;
     const codigo = String(entrada || '').trim().toUpperCase();
     if (!/^JDJ-[A-Z0-9]{6}$/.test(codigo)) {
-      ui.avisar('Revisa el código', 'Escribe un código completo con el formato JDJ-ABC123.'); return;
+      ui.avisar('Revisa el código', 'Escribe un código completo con el formato JDJ-ABC123.', {tipo: 'advertencia'}); return;
     }
     const turno = revision;
     buscando = true; ocultarResultado();
@@ -85,7 +87,7 @@
     try {
       const datos = await ui.conCarga({boton: 'btn-buscar-codigo', titulo: 'Buscando vehículo'}, () => api.buscar(codigo));
       if (turno !== revision || !enPanel()) return;
-      if (!datos.encontrado) { ui.avisar('Código no encontrado', 'Revisa el código o pide al piloto que recupere su comprobante.'); return; }
+      if (!datos.encontrado) { ui.avisar('Código no encontrado', 'Revisa el código o pide al piloto que recupere su comprobante.', {tipo: 'advertencia'}); return; }
       if (datos.codigo !== codigo || !['ASIGNADO', 'INGRESADO', 'VENCIDO', 'RETIRADO'].includes(datos.estado)) {
         throw new api.Error('RESPUESTA_INVALIDA', 'No se pudo verificar el registro.');
       }
@@ -125,7 +127,7 @@
       }
       seleccionado = Object.assign({}, seleccionado, datos);
       pintarResultado();
-      ui.avisar('Operación confirmada', tipo === 'ingreso' ? 'El ingreso quedó registrado.' : 'La salida quedó registrada y el espacio fue liberado.');
+      ui.avisar('Operación confirmada', tipo === 'ingreso' ? 'El ingreso quedó registrado.' : 'La salida quedó registrada y el espacio fue liberado.', {tipo: 'exito'});
     } catch (error) {
       if (turno === revision && enPanel()) {
         // Si el resultado es incierto, exigir una búsqueda nueva antes de otra acción.

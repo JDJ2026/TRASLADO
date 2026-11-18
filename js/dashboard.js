@@ -1,11 +1,12 @@
 /**
- * JDJ San Juan 2026 — dashboard.
- * 
+ * Guardar como js/dashboard.js. Requiere api.js, ui.js y encargado.js.
+ * Necesita el HTML actualizado que entregaremos después.
+ * No inicia al cargar. No confirma salidas desde una tarjeta.
  */
 (function (global) {
   'use strict';
   let api, ui, iniciado = false, ocupado = false, pagina = 0, siguiente = null;
-  let revision = 0, timer = null, tieneDatos = false;
+  let revision = 0, timer = null, tieneDatos = false, ultimoResumen = null;
   const doc = global.document;
   const ids = ['btn-actualizar-dashboard', 'dash-capacidad', 'dash-asignados', 'dash-ingresados',
     'dash-disponibles', 'dash-porcentaje-general', 'dash-barra-general-progreso',
@@ -50,6 +51,7 @@
     iniciar();
     if (!api.sesionActual()) { global.JDJ_ENCARGADO.abrir(); return; }
     pagina = 0; ui.mostrar('dashboard');
+    if (ultimoResumen) pintarCupos(ultimoResumen);
   }
   function nodo(tag, clase, texto) {
     const n = doc.createElement(tag); n.className = clase || '';
@@ -146,42 +148,55 @@
   async function actualizar(manual) {
     if (!visible() || ocupado) return;
     ocupado = true; const turno = revision;
-    el('btn-actualizar-dashboard').disabled = true;
+    const boton = el('btn-actualizar-dashboard');
+    boton.disabled = true; boton.setAttribute('aria-busy', 'true');
+    el('lista-parqueos-dashboard').setAttribute('aria-busy', 'true');
+    el('lista-solicitudes-salida').setAttribute('aria-busy', 'true');
+    const finCarga = !tieneDatos ? ui.cargar('Cargando dashboard', 'Consultamos los espacios y las solicitudes de salida.') : null;
+    if (!el('lista-solicitudes-salida').children.length) {
+      const caja = nodo('div', 'carga-seccion'); caja.setAttribute('role', 'status');
+      const rueda = nodo('span', 'mini-loader'); rueda.setAttribute('aria-hidden', 'true');
+      caja.appendChild(rueda); caja.appendChild(nodo('span', '', 'Cargando solicitudes de salida…'));
+      el('lista-solicitudes-salida').appendChild(caja);
+    }
+    const errores = [];
     try {
-      const resultados = await Promise.allSettled([api.dashboard(), api.solicitudesSalida(pagina)]);
-      if (turno !== revision || !visible()) return;
-      let error = null;
-      try {
-        if (resultados[0].status === 'rejected') throw resultados[0].reason;
-        pintarCupos(resultados[0].value);
-      } catch (e) {
-        error = e;
-        ui.texto('dashboard-actualizacion', tieneDatos ? 'Sin actualización: los últimos datos pueden haber cambiado.' : 'No se pudieron cargar los parqueos.');
-      }
-      try {
-        if (resultados[1].status === 'rejected') throw resultados[1].reason;
-        let datos = resultados[1].value;
-        // Si se retiraron solicitudes y desapareció la página, volver a la primera.
+      const resumen = Promise.resolve().then(() => api.dashboard()).then(datos => {
+        if (turno !== revision || !visible()) return;
+        pintarCupos(datos); ultimoResumen = datos;
+      }).catch(error => {
+        if (turno !== revision || !visible()) return;
+        errores.push(error);
+        ui.texto('dashboard-actualizacion', tieneDatos ? 'Sin actualización: los últimos datos pueden haber cambiado.' : 'No se pudieron cargar los parqueos. Pulsa Actualizar.');
+      }).finally(() => {
+        // No mantener el logo bloqueando los totales por una lista de salidas lenta.
+        if (finCarga) finCarga();
+        el('lista-parqueos-dashboard').removeAttribute('aria-busy');
+      });
+      const solicitudes = Promise.resolve().then(() => api.solicitudesSalida(pagina)).then(async datos => {
+        if (turno !== revision || !visible()) return;
         if (contador(datos.total) && pagina > 0 && pagina >= datos.total) {
           pagina = 0; datos = await api.solicitudesSalida(0);
           if (turno !== revision || !visible()) return;
         }
         pintarSolicitudes(datos);
-      } catch (e) {
-        error = error || e;
+      }).catch(error => {
+        if (turno !== revision || !visible()) return;
+        errores.push(error);
         ui.texto('solicitudes-resumen', 'No se pudo actualizar la lista. Revisa de nuevo antes de actuar.');
-        // Una tarjeta anterior no debe aparentar que sigue pendiente.
         el('lista-solicitudes-salida').replaceChildren(); siguiente = null;
         el('btn-solicitudes-siguiente').disabled = true;
-      }
-      if (manual && error && visible()) ui.mostrarError(error);
+      }).finally(() => el('lista-solicitudes-salida').removeAttribute('aria-busy'));
+      await Promise.allSettled([resumen, solicitudes]);
+      if (manual && errores.length && turno === revision && visible()) ui.mostrarError(errores[0]);
     } finally {
-      ocupado = false;
-      el('btn-actualizar-dashboard').disabled = false;
+      if (finCarga) finCarga();
+      ocupado = false; boton.disabled = false; boton.removeAttribute('aria-busy');
       if (visible()) programar(turno !== revision ? 0 : 45000 + Math.random() * 5000);
     }
   }
   function limpiarPrivados() {
+    ultimoResumen = null; tieneDatos = false;
     el('lista-solicitudes-salida').replaceChildren(); siguiente = null; pagina = 0;
     ui.texto('solicitudes-resumen', 'Inicia sesión para consultar solicitudes.');
   }
