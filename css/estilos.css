@@ -3828,3 +3828,75 @@ button:disabled { cursor: not-allowed; opacity: .52; }
 #btn-actualizar-dashboard[aria-busy="true"]::before { content: ''; flex-shrink: 0; width: 15px; height: 15px; border: 2px solid #cbdde9; border-top-color: #176b9c; border-radius: 50%; animation: girar .8s linear infinite; }
 .carga-seccion { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 100px; padding: 20px; color: #526b7d; font-size: 13px; line-height: 1.7; }
 @media (prefers-reduced-motion: reduce) { .carga-seccion .mini-loader { animation: none; } }
+
+
+/* =========================================================
+   JDJ 2026 · FASE UI/UX: MEJORAS VISUALES SEGURAS
+   Alcance: pantalla principal, formulario y centro de ayuda.
+   No modifica visibilidad de pantallas, estados ni lógica JS.
+   Agregado al final para respetar estilos anteriores.
+========================================================= */
+
+/* Mejor legibilidad en móviles y áreas táctiles accesibles. */
+.inicio-tarjeta,
+.inicio-recuperar,
+.inicio-encargado,
+.ayuda-whatsapp {
+    min-height: 48px;
+}
+
+.inicio-accion-principal,
+.inicio-tarjeta,
+.inicio-recuperar,
+.inicio-encargado {
+    transition: box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease;
+}
+
+/* Formularios: jerarquía nítida sin cambiar dimensiones funcionales. */
+#form-registro :is(input, select):not(:disabled):focus-visible,
+#form-recuperar :is(input, select):not(:disabled):focus-visible {
+    outline: 3px solid #0879b5;
+    outline-offset: 2px;
+}
+
+/* Centro de ayuda: el contacto aparece arriba, seguido de instrucciones. */
+#pantalla-ayuda .ayuda-header { margin-bottom: 18px; }
+#pantalla-ayuda .ayuda-contacto {
+    margin-top: 0;
+    margin-bottom: 22px;
+    border: 1px solid #b8dcc4;
+    background: linear-gradient(150deg, #f0fbf3 0%, #fff 88%);
+    box-shadow: 0 8px 28px rgba(23, 94, 52, .08);
+}
+#pantalla-ayuda .ayuda-contacto h2 { font-size: clamp(19px, 5vw, 24px); }
+#pantalla-ayuda .ayuda-contacto > p { margin-block: 12px 16px; }
+#pantalla-ayuda .ayuda-whatsapp {
+    min-height: 66px;
+    background: #216c3d;
+    box-shadow: 0 7px 18px rgba(24, 100, 52, .18);
+}
+#pantalla-ayuda .ayuda-whatsapp strong { font-size: 15px; }
+#pantalla-ayuda .ayuda-whatsapp small { font-size: 14px; color: #fff; }
+#pantalla-ayuda .ayuda-intro { margin-top: 0; }
+#pantalla-ayuda .ayuda-pasos { margin-top: 14px; }
+#pantalla-ayuda .ayuda-paso {
+    box-shadow: 0 3px 14px rgba(28, 65, 88, .045);
+}
+#pantalla-ayuda .ayuda-paso h2 { font-weight: 800; }
+
+/* Facilitar operación con pantalla pequeña, sin romper el diseño. */
+@media (max-width: 380px) {
+    #pantalla-ayuda .ayuda-contacto { padding: 18px; }
+    #pantalla-ayuda .ayuda-paso { padding: 15px; gap: 10px; }
+    #pantalla-ayuda .ayuda-paso h2 { font-size: 16px; }
+    #pantalla-ayuda .ayuda-paso p { font-size: 13px; }
+}
+@media (hover: hover) and (pointer: fine) {
+    #pantalla-ayuda .ayuda-whatsapp:hover { background: #195a32; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .inicio-accion-principal,
+    .inicio-tarjeta,
+    .inicio-recuperar,
+    .inicio-encargado { transition: none; }
+}
