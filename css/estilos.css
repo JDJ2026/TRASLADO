@@ -3900,3 +3900,248 @@ button:disabled { cursor: not-allowed; opacity: .52; }
     .inicio-recuperar,
     .inicio-encargado { transition: none; }
 }
+
+
+/* ========================================================================
+   JDJ SAN JUAN 2026 · FASE 4C — PULIDO VISUAL JUVENIL / PREMIUM
+   Diseño incremental sobre Fase 4B (sin cambios funcionales).
+
+   Objetivos:
+   - Reforzar la identidad de cinco colores de la jornada.
+   - Mejorar jerarquía, contraste, lectura y tactilidad en celulares.
+   - Conservar IDs, estados, notificaciones y estructura de pantallas.
+   - Mantener fondos ligeros: sin fuentes, imágenes ni librerías extras.
+   ======================================================================== */
+
+/* 1. Tokens: colores de identidad, superficies y profundidad coherentes. */
+:root {
+    --jdj-cielo: #0b9fe8;
+    --jdj-pradera: #39a852;
+    --jdj-sol: #f4c542;
+    --jdj-fiesta: #f28b2b;
+    --jdj-coral: #e94e3d;
+    --jdj-tinta: #163b58;
+    --jdj-sombra-tarjeta: 0 9px 28px rgba(19, 61, 93, .085);
+    --jdj-borde-luminoso: #dceaf3;
+    --jdj-arcoiris: linear-gradient(90deg,
+        var(--jdj-cielo) 0% 24%, var(--jdj-pradera) 24% 44%,
+        var(--jdj-sol) 44% 64%, var(--jdj-fiesta) 64% 82%,
+        var(--jdj-coral) 82% 100%);
+}
+
+/* 2. Fondo sereno; acentos festivos sin disminuir contraste del contenido. */
+body {
+    background: #f5f9fc;
+}
+.inicio-mobile {
+    background: radial-gradient(ellipse at 90% 6%, rgba(244,197,66,.18), transparent 35%),
+                radial-gradient(ellipse at 2% 32%, rgba(11,159,232,.10), transparent 38%),
+                linear-gradient(170deg,#f4faff 0%,#fff 53%,#f8fcff 100%);
+}
+.registro-app, .login-app {
+    background: radial-gradient(ellipse at 100% 0%,rgba(57,168,82,.09),transparent 37%),
+                linear-gradient(180deg,#f2faff 0%,#fff 42%);
+}
+.asignacion-app {
+    background: radial-gradient(ellipse at 0 0,rgba(57,168,82,.13),transparent 40%),
+                linear-gradient(180deg,#f1fcf6 0%,#fff 40%);
+}
+.control-app, .dashboard-app, .itinerario-app, .ayuda-app {
+    background: radial-gradient(ellipse at 90% 0%,rgba(11,159,232,.09),transparent 38%),
+                linear-gradient(180deg,#f4faff 0%,#fff 42%);
+}
+
+/* 3. Inicio: bienvenida con fuerza visual y acción principal muy evidente. */
+.inicio-evento {
+    color: #075c8f;
+    background: rgba(234,247,254,.92);
+    border: 1px solid rgba(11,159,232,.18);
+}
+.bienvenida h1 { color: #123e60; letter-spacing: -.04em; }
+.bienvenida p { color: #3b617a; }
+.inicio-accion-principal {
+    background: linear-gradient(120deg,#087fc1 0%,#0b9fe8 62%,#17b1d8 100%);
+    box-shadow: 0 13px 28px rgba(8,127,193,.23);
+    border: 1px solid rgba(255,255,255,.32);
+}
+.inicio-accion-icono {
+    background: rgba(255,255,255,.18);
+    border: 1px solid rgba(255,255,255,.23);
+}
+.inicio-recuperar,
+.inicio-tarjeta,
+.inicio-encargado {
+    border-color: var(--jdj-borde-luminoso);
+    box-shadow: var(--jdj-sombra-tarjeta);
+}
+.inicio-tarjeta-itinerario {
+    background: linear-gradient(152deg,#fff9e9 0%,#fff 75%);
+    border-color: #f4e5b9;
+}
+.inicio-tarjeta-ayuda {
+    background: linear-gradient(152deg,#eef9f1 0%,#fff 75%);
+    border-color: #d3ead8;
+}
+.inicio-recuperar {
+    background: linear-gradient(135deg,#f0f8ff,#fff 65%);
+}
+.inicio-mensaje {
+    background: #eff8ff;
+    border: 1px solid #d7eaf7;
+    color: #244f6c;
+}
+.inicio-encargado {
+    background: linear-gradient(130deg,#fff,#f5f9ff);
+}
+
+/* 4. Formulario: campos claros, progreso festivo y retroalimentación visual. */
+.registro-icono-principal {
+    background: linear-gradient(145deg,#dff6e6,#eefaff);
+    color: #207940;
+    box-shadow: 0 6px 16px rgba(57,168,82,.10);
+}
+.registro-presentacion h1,
+.login-presentacion h1,
+.asignacion-header h1,
+.ayuda-header h1 { color: #143e5d; line-height: 1.16; }
+.registro-progreso-barra { height: 8px; background: #e8f1f6; }
+.registro-progreso-barra span {
+    background: linear-gradient(90deg,#0b9fe8,#39a852,#f4c542);
+}
+#form-registro,
+#form-recuperar,
+#form-login-encargado {
+    border-color: #dae8f1;
+    box-shadow: var(--jdj-sombra-tarjeta);
+}
+.campo label { color: #23435c; }
+.campo input,
+.campo select {
+    background: #fbfdff;
+    border-color: #cfdfe9;
+    color: #18374e;
+}
+.campo input:focus,
+.campo select:focus {
+    background: #fff;
+    border-color: #087fc1;
+    box-shadow: 0 0 0 4px rgba(11,159,232,.13);
+}
+.registro-aviso { background: #edf8ff; border: 1px solid #d6eaf6; color: #33596f; }
+.btn-principal {
+    background: linear-gradient(120deg,#087fc1,#0b9fe8 68%,#16acd6);
+    box-shadow: 0 9px 22px rgba(11,159,232,.20);
+}
+.btn-volver, .btn-secundario {
+    border-color: #d8e6ef;
+}
+
+/* 5. Pase / QR: el dato esencial y su código siguen siendo el centro. */
+.asignacion-check {
+    background: linear-gradient(140deg,#def8e6,#effcf4);
+    box-shadow: 0 7px 18px rgba(57,168,82,.14);
+}
+.asignacion-parqueo,
+.asignacion-pase,
+.comprobante-detalles {
+    border-color: #dce9ef;
+    box-shadow: var(--jdj-sombra-tarjeta);
+}
+.asignacion-parqueo {
+    background: linear-gradient(152deg,#f1faff 0%,#fff 48%);
+}
+.asignacion-codigo-parqueo h2 { color: #0b5e90; }
+.asignacion-pase { background: #fff; }
+.asignacion-qr-contenedor { background: #fff; }
+.asignacion-tipo { background: #eaf6fd; color: #086a9c; }
+.comprobante-detalles { background: #fbfdff; }
+.comprobante-detalles strong { color: #163b58; }
+.comprobante-acciones .btn-principal { box-shadow: 0 9px 22px rgba(11,159,232,.18); }
+
+/* 6. Encargados: orientar rápido sin alterar los controles de cámara. */
+.control-header-icono, .login-icono {
+    background: linear-gradient(135deg,#e2f4ff,#e9f9ef);
+    box-shadow: 0 6px 18px rgba(11,159,232,.11);
+}
+.control-escaner-card,
+.control-resultado {
+    border-color: #d7e6ef;
+    box-shadow: var(--jdj-sombra-tarjeta);
+}
+.control-escaner-card { background: linear-gradient(155deg,#f3fbff 0%,#fff 52%); }
+.control-resultado { background: #fff; }
+.control-navegacion button { border-radius: 15px; }
+.control-navegacion button:focus-visible,
+.control-confirmar:focus-visible { outline: 3px solid #0a78b5; outline-offset: 3px; }
+
+/* 7. Dashboard: cuatro colores de marca sin ocultar estados de ocupación. */
+.dashboard-tarjeta {
+    border-color: #dce7ed;
+    box-shadow: var(--jdj-sombra-tarjeta);
+}
+.dashboard-tarjeta-azul { background: linear-gradient(145deg,#eef8ff,#fff 80%); }
+.dashboard-tarjeta-amarillo { background: linear-gradient(145deg,#fff8e6,#fff 80%); }
+.dashboard-tarjeta-verde { background: linear-gradient(145deg,#eefaf1,#fff 80%); }
+.dashboard-tarjeta-naranja { background: linear-gradient(145deg,#fff4e9,#fff 80%); }
+.dashboard-ocupacion {
+    background: linear-gradient(125deg,#123b5b,#116893);
+    box-shadow: 0 13px 30px rgba(16,61,96,.17);
+}
+.dashboard-parqueo,
+.dashboard-salidas {
+    box-shadow: 0 7px 20px rgba(24,65,88,.055);
+}
+/* El verde, ámbar y rojo de disponibilidad son señales operativas;
+   NO se cambian ni se sustituyen por colores decorativos. */
+
+/* 8. Itinerario y ayuda: tarjetas acogedoras, mejor ritmo de lectura. */
+.itinerario-presentacion {
+    background: linear-gradient(140deg,#eef8ff,#fff9e9 95%);
+    border-color: #d9e9f1;
+}
+.itinerario-resumen,
+.itinerario-actividad-contenido,
+.ayuda-paso {
+    box-shadow: 0 7px 19px rgba(20,65,90,.065);
+}
+.itinerario-actividad-contenido { border-color: #dce9f0; }
+.itinerario-hora > span { background: #eaf5fc; border-color: #d6e7f0; }
+#pantalla-ayuda .ayuda-contacto {
+    background: linear-gradient(145deg,#edf9f0,#fff 80%);
+    box-shadow: 0 10px 27px rgba(32,105,53,.10);
+}
+#pantalla-ayuda .ayuda-whatsapp {
+    background: linear-gradient(115deg,#176634,#228347);
+}
+#pantalla-ayuda .ayuda-paso:nth-child(5n+1) { border-left: 3px solid #0b9fe8; }
+#pantalla-ayuda .ayuda-paso:nth-child(5n+2) { border-left: 3px solid #39a852; }
+#pantalla-ayuda .ayuda-paso:nth-child(5n+3) { border-left: 3px solid #d79d17; }
+#pantalla-ayuda .ayuda-paso:nth-child(5n+4) { border-left: 3px solid #e94e3d; }
+#pantalla-ayuda .ayuda-paso:nth-child(5n+5) { border-left: 3px solid #f28b2b; }
+
+/* 9. Experiencia accesible: enfoque, tacto y movimiento moderado. */
+:where(button,a,input,select,textarea):focus-visible {
+    outline: 3px solid #087fc1;
+    outline-offset: 3px;
+}
+:where(button,a):not(:disabled) { -webkit-tap-highlight-color: rgba(11,159,232,.12); }
+@media (hover:hover) and (pointer:fine) {
+    .inicio-accion-principal:hover,
+    .btn-principal:not(:disabled):hover {
+        box-shadow: 0 13px 28px rgba(8,127,193,.28);
+        filter: brightness(1.035);
+    }
+    .inicio-tarjeta:hover,
+    .inicio-recuperar:hover,
+    .inicio-encargado:hover { transform: translateY(-2px); }
+}
+@media (max-width: 380px) {
+    .registro-presentacion h1 { font-size: 23px; }
+    .inicio-tarjeta-texto strong { font-size: 13px; }
+    .dashboard-tarjeta strong { font-size: 29px; }
+}
+@media (prefers-reduced-motion:reduce) {
+    .inicio-tarjeta:hover,
+    .inicio-recuperar:hover,
+    .inicio-encargado:hover { transform: none; }
+}
