@@ -1,5 +1,6 @@
 /**
- * JDJ San Juan 2026 — js/registro.js — Fase 3B (18/11/2026).
+ * JDJ San Juan 2026 — js/registro.js — Fase 3C diagnóstico (18/11/2026).
+ * SOLO INSTRUMENTACIÓN: no cambia el sondeo ni las reglas de negocio.
  * Fase 3B: verificaciones breves al presentar o retomar el comprobante.
  * Mantiene una frecuencia moderada fuera de esos periodos para evitar sobrecarga.
  * Requiere api.js, ui.js y el HTML actualizado que entregaremos después.
@@ -32,6 +33,26 @@
   let ultimoInicioRapido = -Infinity;
   const RAPIDO_DURACION_MS = 30000;
   const RAPIDO_ENFRIAMIENTO_MS = 35000;
+  // Diagnóstico volátil: solo métricas técnicas, sin identificadores ni datos personales.
+  // Desactivarlo o volver al archivo Fase 3B al terminar las pruebas.
+  const DIAGNOSTICO_ACTIVO = true;
+  const diagnosticoEventos = [];
+  const MAX_EVENTOS_DIAGNOSTICO = 80;
+  function medir(evento, detalles) {
+    if (!DIAGNOSTICO_ACTIVO) return;
+    const dato = Object.assign({
+      evento: evento, horaLocal: new Date().toISOString(),
+      transcurridoMs: Math.round(ahoraLocal())
+    }, detalles || {});
+    diagnosticoEventos.push(dato);
+    if (diagnosticoEventos.length > MAX_EVENTOS_DIAGNOSTICO) diagnosticoEventos.shift();
+    if (global.console && typeof global.console.info === 'function') {
+      global.console.info('[JDJ DIAG]', dato);
+    }
+  }
+  function exportarDiagnostico() {
+    return JSON.stringify(diagnosticoEventos, null, 2);
+  }
   const ids = [
     'form-registro', 'nombre-piloto', 'telefono-piloto', 'tipo-vehiculo', 'fecha-salida',
     'btn-continuar-registro', 'form-recuperar', 'telefono-recuperar', 'btn-consultar-recuperar',
@@ -148,6 +169,7 @@
     const clave = comprobante.codigo + ':' + comprobante.estado;
     if (estadosNotificados.has(clave)) return;
     estadosNotificados.add(clave);
+    medir('aviso_mostrado', {estado: comprobante.estado});
     if (comprobante.estado === 'INGRESADO') ui.avisar('¡Tu vehículo ya ingresó!',
       'El encargado confirmó el ingreso en ' + comprobante.nombreParqueo + '. Tu espacio está ocupado. Cuando te retires, solicita la salida desde este comprobante.', {tipo: 'exito'});
     else ui.avisar('Salida confirmada', 'El encargado confirmó la salida de tu vehículo. Gracias por participar en JDJ San Juan 2026.', {tipo: 'exito'});
@@ -324,11 +346,25 @@
     if (!activo()) return;
     if (consultando || operacionSalida) { programarConsulta(1000, false); return; }
     consultando = true;
+    const inicioSolicitud = ahoraLocal();
+    const estadoAnterior = comprobante.estado;
     const codigo = comprobante.codigo, numero = comprobante.telefono;
     let fresca = forzarSiguiente || (comprobante.estado === 'ASIGNADO' && !vigente());
     forzarSiguiente = false;
+    medir('consulta_iniciada', {via: fresca ? 'recuperar' : 'estado', estado: estadoAnterior});
     try {
       let datos = fresca ? await api.recuperar(numero) : await api.estado(codigo);
+      const viaInicial = fresca ? 'recuperar' : 'estado';
+      medir('respuesta_recibida', {
+        via: viaInicial, estado: datos && datos.estado || 'SIN_ESTADO',
+        duracionMs: Math.round(ahoraLocal() - inicioSolicitud),
+        // Edad estimada de respuesta cacheada según hora del servidor.
+        edadCacheMs: datos && datos.consultadoEn && datos.servidorAhora ?
+          Date.parse(datos.servidorAhora) - Date.parse(datos.consultadoEn) : null,
+        // Marca temporal del último cambio de fila, no hora del ingreso necesariamente.
+        edadActualizacionMs: datos && datos.actualizadoEn && datos.servidorAhora ?
+          Date.parse(datos.servidorAhora) - Date.parse(datos.actualizadoEn) : null
+      });
       if (!comprobante || comprobante.codigo !== codigo || !visible()) return;
       if (!datos.encontrado && !datos.estado) throw new api.Error('REGISTRO_NO_ENCONTRADO', 'No se pudo localizar el comprobante.');
       // La API pública puede conservar un estado anterior hasta diez segundos.
@@ -339,8 +375,13 @@
       }
       if (fresca && datos.codigo !== codigo) presentar(datos, true, false);
       else aplicarEstado(datos);
+      if (comprobante && comprobante.codigo === codigo && comprobante.estado !== estadoAnterior) {
+        medir('cambio_detectado', {de: estadoAnterior, a: comprobante.estado,
+          duracionConsultaMs: Math.round(ahoraLocal() - inicioSolicitud)});
+      }
       erroresConsulta = 0;
     } catch (_) {
+      medir('consulta_error', {duracionMs: Math.round(ahoraLocal() - inicioSolicitud)});
       if (visible() && comprobante.codigo === codigo) {
         erroresConsulta++;
         mostrarHoraActualizacion('No pudimos verificar el estado. Conserva tu código y vuelve a intentar.');
@@ -402,5 +443,7 @@
 
   global.JDJ_REGISTRO = Object.freeze({iniciar: iniciar, abrirRegistro: abrirRegistro,
     abrirRecuperar: abrirRecuperar, verComprobante: verComprobante,
-    suspender: suspender, hayComprobante: () => Boolean(comprobante)});
+    suspender: suspender, hayComprobante: () => Boolean(comprobante),
+    // API temporal de diagnóstico: únicamente métricas técnicas de esta pestaña.
+    exportarDiagnostico: exportarDiagnostico});
 })(globalThis);
