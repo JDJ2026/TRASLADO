@@ -1,5 +1,5 @@
 /**
- * JDJ San Juan 2026 — js/registro.js — Fase 3E: salida automática (19/11/2026).
+ * JDJ San Juan 2026 — js/registro.js — Fase 3F: salida automática optimizada (19/11/2026).
  * Fase 3B: verificaciones breves al presentar o retomar el comprobante.
  * Mantiene una frecuencia moderada fuera de esos periodos para evitar sobrecarga.
  * Requiere api.js, ui.js y el HTML actualizado que entregaremos después.
@@ -12,8 +12,9 @@
  * y después cada 7–9 s hasta detectar RETIRADO.
  * Es sondeo, no notificación push: la latencia también incluye la red y Apps Script.
  * Solo consulta con el comprobante visible y sin operaciones superpuestas.
- * Los estados terminales se verifican mediante recuperación fresca: un estado
- * público cacheado no debe declarar vencida una reserva recién ingresada.
+ * Antes de declarar una reserva VENCIDA se exige recuperación fresca.
+ * RETIRADO, en cambio, es un estado terminal confirmado por el backend:
+ * no requiere una segunda petición para emitir su notificación.
  */
 (function (global) {
   'use strict';
@@ -348,9 +349,10 @@
       let datos = fresca ? await api.recuperar(numero) : await api.estado(codigo);
       if (!comprobante || comprobante.codigo !== codigo || !visible()) return;
       if (!datos.encontrado && !datos.estado) throw new api.Error('REGISTRO_NO_ENCONTRADO', 'No se pudo localizar el comprobante.');
-      // La API pública puede conservar un estado anterior hasta diez segundos.
-      // Antes de concluir vencimiento/salida, comprobar el registro actual por celular.
-      if (!fresca && ['VENCIDO', 'RETIRADO'].includes(datos.estado)) {
+      // Una reserva VENCIDA se reconcilia con una lectura fresca porque podría
+      // haber ingresado en el intervalo. RETIRADO es terminal: aceptarlo de
+      // la API evita otra llamada y acelera el aviso de salida.
+      if (!fresca && datos.estado === 'VENCIDO') {
         datos = await api.recuperar(numero); fresca = true;
         if (!comprobante || comprobante.codigo !== codigo || !visible()) return;
       }
