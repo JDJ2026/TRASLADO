@@ -1,12 +1,15 @@
 /**
  * Guardar como js/dashboard.js. Requiere api.js, ui.js y encargado.js.
- * Necesita el HTML actualizado que entregaremos después.
- * No inicia al cargar. No confirma salidas desde una tarjeta.
+ * Compatible con el HTML actual del proyecto JDJ 2026.
+ * No inicia al cargar ni confirma salidas desde tarjetas.
+ * Fase 4: limpieza de datos al salir y renderizado eficiente de parqueos.
  */
 (function (global) {
   'use strict';
   let api, ui, iniciado = false, ocupado = false, pagina = 0, siguiente = null;
   let revision = 0, timer = null, tieneDatos = false, ultimoResumen = null;
+  // Firma del detalle para evitar reconstruir 25 tarjetas cuando nada cambió.
+  let firmaParqueos = null;
   const doc = global.document;
   const ids = ['btn-actualizar-dashboard', 'dash-capacidad', 'dash-asignados', 'dash-ingresados',
     'dash-disponibles', 'dash-porcentaje-general', 'dash-barra-general-progreso',
@@ -108,9 +111,17 @@
     el('dash-barra-general-progreso').style.width = Math.min(100, porcentaje) + '%';
     ui.texto('dash-espacios-general', r.disponibles + ' espacios disponibles');
     ui.texto('dash-total-parqueos', datos.parqueos.length);
-    const lista = el('lista-parqueos-dashboard'); lista.replaceChildren();
-    datos.parqueos.forEach(p => lista.appendChild(tarjeta(p)));
-    if (!datos.parqueos.length) lista.appendChild(nodo('p', '', 'No hay parqueos activos configurados.'));
+    // Evitar reemplazar todas las tarjetas si el detalle es idéntico.
+    // Los totales y la hora se actualizan siempre, incluso si no cambian los cupos.
+    const nuevaFirma = JSON.stringify(datos.parqueos);
+    if (nuevaFirma !== firmaParqueos) {
+      const lista = el('lista-parqueos-dashboard');
+      const fragmento = doc.createDocumentFragment();
+      datos.parqueos.forEach(p => fragmento.appendChild(tarjeta(p)));
+      if (!datos.parqueos.length) fragmento.appendChild(nodo('p', '', 'No hay parqueos activos configurados.'));
+      lista.replaceChildren(fragmento);
+      firmaParqueos = nuevaFirma;
+    }
     ui.texto('dashboard-avisos', Array.isArray(datos.advertencias) ? datos.advertencias.join('\n') : '');
     const fecha = new Date(datos.actualizadoEn);
     ui.texto('dashboard-actualizacion', Number.isFinite(fecha.getTime()) ? 'Datos de las ' +
@@ -126,7 +137,8 @@
       if (!s || !/^JDJ-[A-Z0-9]{6}$/.test(s.codigo)) throw new api.Error('RESPUESTA_INVALIDA', 'Una solicitud tiene un código inválido.');
     });
     siguiente = datos.siguiente;
-    const lista = el('lista-solicitudes-salida'); lista.replaceChildren();
+    const lista = el('lista-solicitudes-salida');
+    const fragmento = doc.createDocumentFragment();
     datos.solicitudes.forEach(s => {
       const a = nodo('article', 'solicitud-salida');
       a.appendChild(nodo('strong', '', s.codigo + ' · ' + s.nombre));
@@ -137,9 +149,10 @@
         global.JDJ_ENCARGADO.abrir();
         await global.JDJ_ENCARGADO.buscarCodigo(s.codigo);
       });
-      a.appendChild(boton); lista.appendChild(a);
+      a.appendChild(boton); fragmento.appendChild(a);
     });
-    if (!datos.total) lista.appendChild(nodo('p', '', 'No hay solicitudes de salida pendientes.'));
+    if (!datos.total) fragmento.appendChild(nodo('p', '', 'No hay solicitudes de salida pendientes.'));
+    lista.replaceChildren(fragmento);
     ui.texto('solicitudes-resumen', datos.total + ' solicitudes pendientes' +
       (datos.total ? ' · Mostrando ' + (pagina + 1) + '–' + (pagina + datos.solicitudes.length) : ''));
     el('btn-solicitudes-anterior').disabled = pagina === 0;
@@ -195,9 +208,24 @@
       if (visible()) programar(turno !== revision ? 0 : 45000 + Math.random() * 5000);
     }
   }
+  /**
+   * Borra todos los datos de la sesión anterior del DOM y la memoria.
+   * Nunca conservar las tarjetas ni los totales al cerrar sesión o vencer el token.
+   */
   function limpiarPrivados() {
-    ultimoResumen = null; tieneDatos = false;
-    el('lista-solicitudes-salida').replaceChildren(); siguiente = null; pagina = 0;
+    ultimoResumen = null; tieneDatos = false; firmaParqueos = null;
+    siguiente = null; pagina = 0;
+    ['capacidad', 'asignados', 'ingresados', 'disponibles'].forEach(k => ui.texto('dash-' + k, '0'));
+    ui.texto('dash-porcentaje-general', '0%');
+    el('dash-barra-general-progreso').style.width = '0%';
+    ui.texto('dash-espacios-general', '0 espacios disponibles');
+    ui.texto('dash-total-parqueos', '0');
+    ui.texto('dashboard-actualizacion', 'Inicia sesión para consultar el dashboard.');
+    ui.texto('dashboard-avisos', '');
+    el('lista-parqueos-dashboard').replaceChildren();
+    el('lista-solicitudes-salida').replaceChildren();
+    el('btn-solicitudes-anterior').disabled = true;
+    el('btn-solicitudes-siguiente').disabled = true;
     ui.texto('solicitudes-resumen', 'Inicia sesión para consultar solicitudes.');
   }
   global.JDJ_DASHBOARD = Object.freeze({iniciar: iniciar, abrir: abrir, suspender: suspender});
