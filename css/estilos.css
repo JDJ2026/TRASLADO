@@ -4145,3 +4145,389 @@ body {
     .inicio-recuperar:hover,
     .inicio-encargado:hover { transform: none; }
 }
+
+
+/* =========================================================
+   FASE 4D · IDENTIDAD VISUAL CONTINUA
+   Mejora controlada del fondo, profundidad y atmósfera.
+   Objetivo: una app más juvenil, amigable y con unidad visual.
+========================================================= */
+
+:root {
+    --jdj-fondo-base: #f7fbff;
+    --jdj-fondo-superficie: rgba(255, 255, 255, .84);
+    --jdj-fondo-superficie-fuerte: rgba(255, 255, 255, .92);
+    --jdj-borde-suave: rgba(163, 188, 206, .28);
+    --jdj-resplandor-azul: rgba(11, 159, 232, .16);
+    --jdj-resplandor-verde: rgba(57, 168, 82, .15);
+    --jdj-resplandor-amarillo: rgba(244, 197, 66, .14);
+    --jdj-resplandor-naranja: rgba(242, 139, 43, .14);
+    --jdj-resplandor-rojo: rgba(233, 78, 61, .11);
+    --jdj-filtro-vidrio: saturate(135%) blur(18px);
+    --jdj-sombra-elevada: 0 18px 44px rgba(23, 54, 76, .10);
+    --jdj-sombra-media: 0 10px 26px rgba(23, 54, 76, .08);
+}
+
+html {
+    background:
+        radial-gradient(circle at 18% 12%, rgba(11,159,232,.10) 0, rgba(11,159,232,0) 24%),
+        radial-gradient(circle at 82% 18%, rgba(244,197,66,.10) 0, rgba(244,197,66,0) 22%),
+        linear-gradient(180deg, #fafdff 0%, #f6fbff 42%, #f3f8fb 100%);
+}
+
+body {
+    position: relative;
+    overflow-x: hidden;
+    background:
+        radial-gradient(circle at 14% 6%, rgba(11,159,232,.06) 0, rgba(11,159,232,0) 18%),
+        radial-gradient(circle at 86% 14%, rgba(242,139,43,.06) 0, rgba(242,139,43,0) 18%),
+        radial-gradient(circle at 20% 100%, rgba(57,168,82,.05) 0, rgba(57,168,82,0) 26%),
+        linear-gradient(180deg, #fbfdff 0%, #f6fbff 52%, #f4fafb 100%);
+}
+
+body::before,
+body::after {
+    content: "";
+    position: fixed;
+    inset: auto;
+    pointer-events: none;
+    z-index: 0;
+    filter: blur(14px);
+    opacity: .9;
+}
+
+body::before {
+    top: 88px;
+    left: -86px;
+    width: 230px;
+    height: 230px;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 32% 35%, rgba(11,159,232,.16) 0, rgba(11,159,232,.07) 32%, rgba(11,159,232,0) 68%),
+        radial-gradient(circle at 68% 64%, rgba(57,168,82,.14) 0, rgba(57,168,82,0) 58%);
+}
+
+body::after {
+    right: -70px;
+    bottom: 72px;
+    width: 240px;
+    height: 240px;
+    border-radius: 42% 58% 58% 42% / 44% 45% 55% 56%;
+    background:
+        radial-gradient(circle at 35% 35%, rgba(244,197,66,.20) 0, rgba(244,197,66,.10) 28%, rgba(244,197,66,0) 62%),
+        radial-gradient(circle at 66% 68%, rgba(242,139,43,.16) 0, rgba(242,139,43,0) 60%),
+        radial-gradient(circle at 72% 20%, rgba(233,78,61,.10) 0, rgba(233,78,61,0) 44%);
+}
+
+body > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Capas decorativas suaves en pantallas completas. */
+.contenedor-principal,
+.registro-app,
+.asignacion-app,
+.login-app,
+.control-app,
+.ayuda-app,
+.dashboard-app,
+.itinerario-app,
+.comprobante-app,
+.recuperar-app {
+    position: relative;
+    isolation: isolate;
+}
+
+.contenedor-principal::before,
+.registro-app::before,
+.asignacion-app::before,
+.login-app::before,
+.control-app::before,
+.ayuda-app::before,
+.dashboard-app::before,
+.itinerario-app::before,
+.comprobante-app::before,
+.recuperar-app::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    opacity: .78;
+    background:
+        radial-gradient(circle at 6% 12%, rgba(11,159,232,.06) 0, rgba(11,159,232,0) 16%),
+        radial-gradient(circle at 94% 10%, rgba(244,197,66,.07) 0, rgba(244,197,66,0) 15%),
+        radial-gradient(circle at 88% 78%, rgba(242,139,43,.06) 0, rgba(242,139,43,0) 16%),
+        radial-gradient(circle at 15% 88%, rgba(57,168,82,.06) 0, rgba(57,168,82,0) 18%);
+}
+
+/* Cartas y paneles principales más tipo app: más luz, profundidad y suavidad. */
+.registro-app,
+.asignacion-app,
+.login-app,
+.control-app,
+.ayuda-app,
+.itinerario-app,
+.dashboard-app {
+    background: linear-gradient(180deg, rgba(255,255,255,.50), rgba(255,255,255,.40));
+    border: 1px solid rgba(218, 230, 239, .72);
+    box-shadow: var(--jdj-sombra-elevada);
+    backdrop-filter: var(--jdj-filtro-vidrio);
+    -webkit-backdrop-filter: var(--jdj-filtro-vidrio);
+}
+
+.inicio-hero,
+.registro-presentacion,
+.asignacion-encabezado,
+.control-header,
+.dashboard-header,
+.ayuda-header,
+.itinerario-header,
+.comprobante-encabezado,
+.recuperar-presentacion {
+    position: relative;
+}
+
+.inicio-hero::after,
+.registro-presentacion::after,
+.asignacion-encabezado::after,
+.control-header::after,
+.dashboard-header::after,
+.ayuda-header::after,
+.itinerario-header::after,
+.comprobante-encabezado::after,
+.recuperar-presentacion::after {
+    content: "";
+    display: block;
+    width: 92px;
+    height: 8px;
+    margin-top: 14px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--azul) 0 22%, var(--verde) 22% 44%, var(--amarillo) 44% 64%, var(--naranja) 64% 84%, var(--rojo) 84% 100%);
+    box-shadow: 0 4px 10px rgba(11,159,232,.14);
+}
+
+/* Tarjetas tipo app móvil: ligeramente translúcidas, suaves y coloridas. */
+.inicio-tarjeta,
+.inicio-recuperar,
+.inicio-encargado,
+#form-registro,
+#form-recuperar,
+#form-login-encargado,
+.control-escaner-card,
+.control-resultado,
+.comprobante-detalles,
+.ayuda-paso,
+.ayuda-contacto,
+.itinerario-resumen,
+.itinerario-actividad-contenido,
+.dashboard-tarjeta,
+.dashboard-parqueo,
+.dashboard-salidas,
+.encargado-sesion,
+.modal-ingreso-tarjeta {
+    background: linear-gradient(180deg, var(--jdj-fondo-superficie) 0%, var(--jdj-fondo-superficie-fuerte) 100%);
+    border-color: rgba(219, 230, 238, .94);
+    box-shadow: var(--jdj-sombra-media);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* Botones con energía juvenil, sin perder legibilidad. */
+.btn-principal,
+.inicio-accion-principal,
+.control-confirmar,
+#btn-actualizar-dashboard,
+.ayuda-whatsapp {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-principal::before,
+.inicio-accion-principal::before,
+.control-confirmar::before,
+#btn-actualizar-dashboard::before,
+.ayuda-whatsapp::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.24), rgba(255,255,255,0) 45%);
+    pointer-events: none;
+}
+
+.inicio-accion-principal {
+    background: linear-gradient(135deg, #0b9fe8 0%, #0b89d0 58%, #0a78b5 100%);
+    box-shadow: 0 14px 30px rgba(8, 127, 193, .26);
+}
+
+.btn-principal,
+.control-confirmar {
+    background-image: linear-gradient(135deg, #0b9fe8, #087fc1);
+    box-shadow: 0 12px 26px rgba(8,127,193,.23);
+}
+
+.inicio-recuperar {
+    background: linear-gradient(135deg, rgba(255,255,255,.92), rgba(245,251,255,.94));
+}
+
+.inicio-tarjeta-itinerario {
+    background: linear-gradient(145deg, rgba(238,248,255,.94), rgba(255,255,255,.96));
+}
+
+.inicio-tarjeta-ayuda {
+    background: linear-gradient(145deg, rgba(240,250,243,.95), rgba(255,255,255,.96));
+}
+
+/* Campos más amables y consistentes. */
+input,
+select,
+textarea {
+    background-color: rgba(255,255,255,.90);
+}
+
+.campo input,
+.campo select,
+.campo textarea,
+select,
+input[type="text"],
+input[type="tel"],
+input[type="number"] {
+    border-color: rgba(198, 215, 228, .95);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 1px 2px rgba(11,48,77,.03);
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus,
+select:focus,
+input[type="text"]:focus,
+input[type="tel"]:focus,
+input[type="number"]:focus {
+    border-color: rgba(11,159,232,.60);
+    box-shadow: 0 0 0 4px rgba(11,159,232,.12);
+}
+
+/* QR y estados con un poco más de protagonismo visual. */
+.qr-contenedor,
+.comprobante-qr,
+#codigo-qr {
+    filter: drop-shadow(0 10px 18px rgba(20, 61, 96, .08));
+}
+
+.comprobante-detalles {
+    position: relative;
+    overflow: hidden;
+}
+
+.comprobante-detalles::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--azul), var(--verde), var(--amarillo), var(--naranja), var(--rojo));
+}
+
+/* Dashboard con un poco más de identidad, conservando sus colores operativos. */
+.dashboard-app::before {
+    background:
+        radial-gradient(circle at 10% 12%, rgba(11,159,232,.07) 0, rgba(11,159,232,0) 15%),
+        radial-gradient(circle at 88% 10%, rgba(244,197,66,.07) 0, rgba(244,197,66,0) 16%),
+        radial-gradient(circle at 85% 92%, rgba(242,139,43,.06) 0, rgba(242,139,43,0) 18%);
+}
+
+.dashboard-tarjeta,
+.dashboard-parqueo,
+.dashboard-salidas {
+    border: 1px solid rgba(218, 229, 237, .96);
+}
+
+.dashboard-header .btn-volver,
+.btn-volver {
+    background: rgba(255,255,255,.90);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* Itinerario y ayuda con más calidez juvenil. */
+.itinerario-presentacion,
+.ayuda-intro {
+    background: linear-gradient(140deg, rgba(238,248,255,.94), rgba(255,249,233,.94) 82%, rgba(239,250,243,.94));
+    box-shadow: var(--jdj-sombra-media);
+}
+
+.ayuda-contacto {
+    background: linear-gradient(145deg, rgba(237,249,240,.95), rgba(255,255,255,.98) 78%);
+}
+
+/* Microinteracciones suaves en superficies seleccionadas. */
+@media (hover:hover) and (pointer:fine) {
+    .inicio-tarjeta:hover,
+    .inicio-recuperar:hover,
+    .inicio-encargado:hover,
+    .dashboard-parqueo:hover,
+    .dashboard-tarjeta:hover,
+    .ayuda-paso:hover,
+    .itinerario-actividad-contenido:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 30px rgba(23, 64, 90, .09);
+    }
+}
+
+/* En móvil, mantener la frescura visual sin saturar la pantalla. */
+@media (max-width: 700px) {
+    body::before {
+        top: 84px;
+        left: -108px;
+        width: 205px;
+        height: 205px;
+        opacity: .82;
+    }
+
+    body::after {
+        right: -96px;
+        bottom: 114px;
+        width: 215px;
+        height: 215px;
+        opacity: .82;
+    }
+
+    .registro-app,
+    .asignacion-app,
+    .login-app,
+    .control-app,
+    .ayuda-app,
+    .itinerario-app,
+    .dashboard-app {
+        background: linear-gradient(180deg, rgba(255,255,255,.64), rgba(255,255,255,.54));
+        box-shadow: 0 12px 34px rgba(23,54,76,.09);
+    }
+
+    .inicio-hero::after,
+    .registro-presentacion::after,
+    .asignacion-encabezado::after,
+    .control-header::after,
+    .dashboard-header::after,
+    .ayuda-header::after,
+    .itinerario-header::after,
+    .comprobante-encabezado::after,
+    .recuperar-presentacion::after {
+        width: 84px;
+        margin-top: 12px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .inicio-tarjeta:hover,
+    .inicio-recuperar:hover,
+    .inicio-encargado:hover,
+    .dashboard-parqueo:hover,
+    .dashboard-tarjeta:hover,
+    .ayuda-paso:hover,
+    .itinerario-actividad-contenido:hover {
+        transform: none;
+        box-shadow: var(--jdj-sombra-media);
+    }
+}
