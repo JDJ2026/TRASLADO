@@ -1,6 +1,5 @@
 /**
- * JDJ San Juan 2026 — js/registro.js — Fase 3C diagnóstico (18/11/2026).
- * SOLO INSTRUMENTACIÓN: no cambia el sondeo ni las reglas de negocio.
+ * JDJ San Juan 2026 — js/registro.js — Fase 3E: salida automática (19/11/2026).
  * Fase 3B: verificaciones breves al presentar o retomar el comprobante.
  * Mantiene una frecuencia moderada fuera de esos periodos para evitar sobrecarga.
  * Requiere api.js, ui.js y el HTML actualizado que entregaremos después.
@@ -8,7 +7,9 @@
  *
  * Mantiene el código manual si la librería QR no está disponible.
  * ASIGNADO: verifica cada 3–4 s durante 30 s tras mostrar/retomar el
- * comprobante; después cada 7–9 s. INGRESADO: cada 45–50 s.
+ * comprobante; después cada 7–9 s. INGRESADO sin solicitud: cada 45–50 s.
+ * INGRESADO con solicitud de salida: consulta rápidamente durante 30 s
+ * y después cada 7–9 s hasta detectar RETIRADO.
  * Es sondeo, no notificación push: la latencia también incluye la red y Apps Script.
  * Solo consulta con el comprobante visible y sin operaciones superpuestas.
  * Los estados terminales se verifican mediante recuperación fresca: un estado
@@ -33,26 +34,6 @@
   let ultimoInicioRapido = -Infinity;
   const RAPIDO_DURACION_MS = 30000;
   const RAPIDO_ENFRIAMIENTO_MS = 35000;
-  // Diagnóstico volátil: solo métricas técnicas, sin identificadores ni datos personales.
-  // Desactivarlo o volver al archivo Fase 3B al terminar las pruebas.
-  const DIAGNOSTICO_ACTIVO = true;
-  const diagnosticoEventos = [];
-  const MAX_EVENTOS_DIAGNOSTICO = 80;
-  function medir(evento, detalles) {
-    if (!DIAGNOSTICO_ACTIVO) return;
-    const dato = Object.assign({
-      evento: evento, horaLocal: new Date().toISOString(),
-      transcurridoMs: Math.round(ahoraLocal())
-    }, detalles || {});
-    diagnosticoEventos.push(dato);
-    if (diagnosticoEventos.length > MAX_EVENTOS_DIAGNOSTICO) diagnosticoEventos.shift();
-    if (global.console && typeof global.console.info === 'function') {
-      global.console.info('[JDJ DIAG]', dato);
-    }
-  }
-  function exportarDiagnostico() {
-    return JSON.stringify(diagnosticoEventos, null, 2);
-  }
   const ids = [
     'form-registro', 'nombre-piloto', 'telefono-piloto', 'tipo-vehiculo', 'fecha-salida',
     'btn-continuar-registro', 'form-recuperar', 'telefono-recuperar', 'btn-consultar-recuperar',
@@ -67,19 +48,32 @@
   const ahoraLocal = () => global.performance && typeof global.performance.now === 'function' ? global.performance.now() : Date.now();
   const ahoraServidor = () => relojServidor + (ahoraLocal() - relojLocal);
   const visible = () => comprobante && ui.pantallaActual() === 'asignacion' && !doc.hidden;
-  /** Próxima consulta: breve solo durante un periodo de atención al QR. */
+  /**
+   * Devuelve el intervalo de consulta del estado.
+   * Las salidas pendientes requieren un sondeo más frecuente que un vehículo
+   * simplemente estacionado; al completar el retiro, el sondeo se detiene.
+   */
   function demoraConsulta() {
-    if (comprobante && comprobante.estado === 'ASIGNADO') {
+    const esperaIngreso = comprobante && comprobante.estado === 'ASIGNADO';
+    const esperaSalida = comprobante && comprobante.estado === 'INGRESADO' && comprobante.salidaSolicitada;
+    if (esperaIngreso || esperaSalida) {
       const rapido = ahoraLocal() < sondeoRapidoHasta;
       return rapido ? 3000 + Math.random() * 1000 : 7000 + Math.random() * 2000;
     }
     return 45000 + Math.random() * 5000;
   }
-  /** Inicia una ventana corta de consultas rápidas, sin encadenar ventanas. */
-  function activarSondeoRapido() {
-    if (!comprobante || comprobante.estado !== 'ASIGNADO' || !visible()) return;
+  /**
+   * Abre una ventana limitada de consultas rápidas, solo al esperar ingreso
+   * o tras solicitar la salida. Los eventos de foco no pueden prolongarla
+   * indefinidamente; con fuerza=true se permite iniciarla al solicitar salida.
+   */
+  function activarSondeoRapido(fuerza) {
+    if (!comprobante || !visible()) return;
+    const esperandoIngreso = comprobante.estado === 'ASIGNADO';
+    const esperandoSalida = comprobante.estado === 'INGRESADO' && comprobante.salidaSolicitada;
+    if (!esperandoIngreso && !esperandoSalida) return;
     const ahora = ahoraLocal();
-    if (ahora - ultimoInicioRapido < RAPIDO_ENFRIAMIENTO_MS) return;
+    if (!fuerza && ahora - ultimoInicioRapido < RAPIDO_ENFRIAMIENTO_MS) return;
     ultimoInicioRapido = ahora;
     sondeoRapidoHasta = ahora + RAPIDO_DURACION_MS;
   }
@@ -169,7 +163,6 @@
     const clave = comprobante.codigo + ':' + comprobante.estado;
     if (estadosNotificados.has(clave)) return;
     estadosNotificados.add(clave);
-    medir('aviso_mostrado', {estado: comprobante.estado});
     if (comprobante.estado === 'INGRESADO') ui.avisar('¡Tu vehículo ya ingresó!',
       'El encargado confirmó el ingreso en ' + comprobante.nombreParqueo + '. Tu espacio está ocupado. Cuando te retires, solicita la salida desde este comprobante.', {tipo: 'exito'});
     else ui.avisar('Salida confirmada', 'El encargado confirmó la salida de tu vehículo. Gracias por participar en JDJ San Juan 2026.', {tipo: 'exito'});
@@ -293,8 +286,8 @@
    * adelantadas o pospongan indefinidamente el sondeo habitual.
    *
    * - Al presentar/retomar el QR, activa hasta 30 s de sondeo rápido.
-   * - ASIGNADO: admite una consulta adelantada si hace falta y no hay otra.
-   * - INGRESADO: refresco anticipado solo después de 30 s.
+   * - ASIGNADO o INGRESADO con salida solicitada: verifica pronto.
+   * - INGRESADO sin salida pendiente: anticipa solo tras 30 s.
    * - Una reserva posiblemente vencida se verifica de inmediato.
    * No se abren consultas paralelas ni se permite un ciclo infinito de foco.
    */
@@ -303,7 +296,9 @@
     const verificadoEn = Date.parse(ultimaVerificacion);
     const edad = Number.isFinite(verificadoEn) ? ahoraServidor() - verificadoEn : Infinity;
     if (inmediato) activarSondeoRapido();
-    const umbral = comprobante.estado === 'ASIGNADO' ? 3000 : 30000;
+    const esperandoMovimiento = comprobante.estado === 'ASIGNADO' ||
+      (comprobante.estado === 'INGRESADO' && comprobante.salidaSolicitada);
+    const umbral = esperandoMovimiento ? 3000 : 30000;
     const refrescar = Boolean(inmediato) &&
       (edad >= umbral || (comprobante.estado === 'ASIGNADO' && !vigente()));
     if (activo()) {
@@ -346,25 +341,11 @@
     if (!activo()) return;
     if (consultando || operacionSalida) { programarConsulta(1000, false); return; }
     consultando = true;
-    const inicioSolicitud = ahoraLocal();
-    const estadoAnterior = comprobante.estado;
     const codigo = comprobante.codigo, numero = comprobante.telefono;
     let fresca = forzarSiguiente || (comprobante.estado === 'ASIGNADO' && !vigente());
     forzarSiguiente = false;
-    medir('consulta_iniciada', {via: fresca ? 'recuperar' : 'estado', estado: estadoAnterior});
     try {
       let datos = fresca ? await api.recuperar(numero) : await api.estado(codigo);
-      const viaInicial = fresca ? 'recuperar' : 'estado';
-      medir('respuesta_recibida', {
-        via: viaInicial, estado: datos && datos.estado || 'SIN_ESTADO',
-        duracionMs: Math.round(ahoraLocal() - inicioSolicitud),
-        // Edad estimada de respuesta cacheada según hora del servidor.
-        edadCacheMs: datos && datos.consultadoEn && datos.servidorAhora ?
-          Date.parse(datos.servidorAhora) - Date.parse(datos.consultadoEn) : null,
-        // Marca temporal del último cambio de fila, no hora del ingreso necesariamente.
-        edadActualizacionMs: datos && datos.actualizadoEn && datos.servidorAhora ?
-          Date.parse(datos.servidorAhora) - Date.parse(datos.actualizadoEn) : null
-      });
       if (!comprobante || comprobante.codigo !== codigo || !visible()) return;
       if (!datos.encontrado && !datos.estado) throw new api.Error('REGISTRO_NO_ENCONTRADO', 'No se pudo localizar el comprobante.');
       // La API pública puede conservar un estado anterior hasta diez segundos.
@@ -375,13 +356,8 @@
       }
       if (fresca && datos.codigo !== codigo) presentar(datos, true, false);
       else aplicarEstado(datos);
-      if (comprobante && comprobante.codigo === codigo && comprobante.estado !== estadoAnterior) {
-        medir('cambio_detectado', {de: estadoAnterior, a: comprobante.estado,
-          duracionConsultaMs: Math.round(ahoraLocal() - inicioSolicitud)});
-      }
       erroresConsulta = 0;
     } catch (_) {
-      medir('consulta_error', {duracionMs: Math.round(ahoraLocal() - inicioSolicitud)});
       if (visible() && comprobante.codigo === codigo) {
         erroresConsulta++;
         mostrarHoraActualizacion('No pudimos verificar el estado. Conserva tu código y vuelve a intentar.');
@@ -415,7 +391,13 @@
         () => api.solicitarSalida(codigo, numero));
       if (comprobante.codigo === codigo) {
         aplicarEstado(datos);
-        if (datos.estado === 'INGRESADO') ui.avisar('Solicitud de salida enviada', 'El encargado recibió tu solicitud. El cupo se liberará cuando confirme el retiro del vehículo.', {tipo: 'exito'});
+        if (datos.estado === 'INGRESADO') {
+          ui.avisar('Solicitud de salida enviada', 'El encargado recibió tu solicitud. El cupo se liberará cuando confirme el retiro del vehículo.', {tipo: 'exito'});
+          // Tras solicitar salida, no esperar los 45–50 s del estado INGRESADO.
+          // Una consulta en curso no se duplica; el temporizador se reprograma.
+          activarSondeoRapido(true);
+          if (!consultando && activo()) programarConsulta(demoraConsulta(), false);
+        }
       }
     } catch (error) { ui.mostrarError(error); }
     finally { operacionSalida = false; }
@@ -443,7 +425,5 @@
 
   global.JDJ_REGISTRO = Object.freeze({iniciar: iniciar, abrirRegistro: abrirRegistro,
     abrirRecuperar: abrirRecuperar, verComprobante: verComprobante,
-    suspender: suspender, hayComprobante: () => Boolean(comprobante),
-    // API temporal de diagnóstico: únicamente métricas técnicas de esta pestaña.
-    exportarDiagnostico: exportarDiagnostico});
+    suspender: suspender, hayComprobante: () => Boolean(comprobante)});
 })(globalThis);
