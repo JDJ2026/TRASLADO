@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  const SOPORTE_WHATSAPP = '50241151019'; // Mismo número del proyecto original.
+  const SOPORTE_WHATSAPP = '50247232623'; // Mismo número del proyecto original.
   const doc = global.document;
   let iniciado = false, intentoIniciado = false, timerSesion = null;
   const privada = nombre => nombre === 'encargado' || nombre === 'dashboard';
